@@ -1,0 +1,67 @@
+from constants import *
+import numpy as np
+
+## Describes the MDP data structure
+class myMDP:
+	"""Class for representing an MDP"""
+	def __init__(self, numStates, numActions, rewards, transitionProbabilities, discountFactor, filename):
+		global Rmax
+		global Vmax
+		self.numStates = numStates
+		self.numActions = numActions
+		self.rewards = map(float, rewards)
+		self.transitionProbabilities = map(float, transitionProbabilities)
+		self.discountFactor = discountFactor
+		#### Normalising rewards so that in range 0,1
+		Rmax = max(self.rewards)
+		self.rewards = np.array(self.rewards)
+		self.rewards = self.rewards/float(Rmax)
+		Rmax = max(self.rewards)
+		Vmax = Rmax/(1-self.discountFactor)
+		print "Setting Rmax to be", Vmax, self.discountFactor
+		self.Vmax = Vmax
+		self.filename = filename
+		print "Initialised MDP with ", numStates, " states and ", numActions, " actions"
+
+	def printMDP(self):
+		print "The given MDP has : ", self.numStates, " states"
+		print self.numActions, " actions"
+		print self.rewards, " rewards"
+		print self.transitionProbabilities, " Probabilities"
+		print self.discountFactor, " discount factor"
+		print "Read from file ",self.filename
+
+	def simulate(self, state, action):
+		if (state>=self.numStates or state<0):
+			print "The given state number does not exist"
+			return None
+
+		elif (action>=self.numActions or action<0):
+			print "The given action does not exist"
+			return None
+		
+		else:
+			startIndex = state*self.numStates*self.numActions + action*self.numStates
+			probs = self.transitionProbabilities[startIndex:startIndex+self.numStates]
+			rewards = self.rewards[startIndex:startIndex+self.numStates]
+			sampledstate = np.random.choice(np.arange(self.numStates), p=probs)
+			return sampledstate, rewards[sampledstate]
+
+	def getNumStates(self):
+		return self.numStates
+
+	def getNumActions(self):
+		return self.numActions
+
+def UniformSampling(times, mdp):
+	"""Adopt a uniform sampling strategy and return the policy"""
+	policy_answer = []
+	for s in range(mdp.numStates):
+		avg_rewards = [0 for i in range(mdp.numActions)]
+		for a in range(mdp.numActions):
+			for i in range(times):
+				newstate, reward = mdp.simulate(s, a)
+				avg_rewards[a] += int(reward)
+			avg_rewards[a] /= times
+		policy_answer.append(avg_rewards.index(max(avg_rewards)))
+	return policy_answer
