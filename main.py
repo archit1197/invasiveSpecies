@@ -4,8 +4,9 @@ from MDPclass import myMDP
 from FIECHTER import FeichterPolicy
 from RR import RoundRobin
 from LUCB import LUCBStopping
+from LUCBepisodic import LUCBEpisodic
 from MBIE import mbie
-from DDVUpper import ddvupper
+from DDVOuu import ddvouu
 
 def main(argv):
 	# print "Executing MDP"
@@ -38,12 +39,15 @@ def main(argv):
 	elif(argv[2]=="lucb"):
 		print "Doing LUCB type algorithm"
 		print LUCBStopping(theMDP, 0, eps)
+	elif(argv[2]=="lucb-eps"):
+		print "Doing LUCB episodic type algorithm"
+		print LUCBEpisodic(theMDP, 0, eps)
 	elif(argv[2]=="mbie"):
 		print "Doing MBIE-reset algorithm"
 		print mbie(theMDP, 0, eps)
-	elif(argv[2]=="ddv-upper"):
-		print "Doing DDV Upper algorithm"
-		print ddvupper(theMDP, 0, eps)
+	elif(argv[2]=="ddv-ouu"):
+		print "Doing DDV-OUU algorithm"
+		print ddvouu(theMDP, 0, eps)
 
 
 def UniformSampling(times, mdp):

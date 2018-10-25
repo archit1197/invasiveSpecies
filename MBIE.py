@@ -56,7 +56,7 @@ def mbie(mdp, start_state=0, epsilon=4, delta=0.1):
 	current_state = start_state
 	### Repeat forever
 
-	sys.stdout = open(mdp.filename+'-mbie.txt', 'w+')
+	# sys.stdout = open(mdp.filename+'-mbie.txt', 'w+')
 	ff = open(mdp.filename+'-mbie-samples.txt', 'w+')
 
 	while True:
@@ -66,7 +66,7 @@ def mbie(mdp, start_state=0, epsilon=4, delta=0.1):
 		while h<=H:
 			if(samples%10000==0):
 				acList = bestTwoActions(mdp, start_state, Qlower, Qupper)
-				print samples, (Qupper[start_state][acList[1]]-Qlower[start_state][acList[0]])/epsilon 
+				print samples, (QupperMBAE[start_state][acList[1]]-Qlower[start_state][acList[0]])/epsilon 
 				np.savetxt(ff, N_s_a, delimiter=',')
 				ff.write('\n')
 			for i in range(mdp.numStates):
@@ -87,6 +87,7 @@ def mbie(mdp, start_state=0, epsilon=4, delta=0.1):
 					N_s_a_sprime[current_state][current_action][ss] += 1
 					samples += 1
 				for s2 in range(mdp.numStates):
+					# print current_state, current_action, s2, N_s_a_sprime[current_state][current_action][s2], N_s_a[current_state][current_action]
 					P_s_a_sprime[state][act][s2] = (float)(N_s_a_sprime[state][act][s2])/N_s_a[state][act]
 				current_state = ss
 
@@ -106,7 +107,7 @@ def mbie(mdp, start_state=0, epsilon=4, delta=0.1):
 				for act in range(mdp.numActions):
 					# Calculations for Qupper and Qlower
 					firstterm = R_s_a[state][act]
-					secondterm = mdp.discountFactor*np.sum(Vupper*(N_s_a_sprime[state][act]/N_s_a[state][act]))
+					secondterm = mdp.discountFactor*np.sum(VupperMBAE*(N_s_a_sprime[state][act]/N_s_a[state][act]))
 					#secondterm = mdp.discountFactor*sum(Vupper[ss]*N_s_a_sprime[state][act][ss]/N_s_a[state][act] for ss in range(mdp.numStates))  
 					lower_secondterm = mdp.discountFactor*np.sum(Vlower*(N_s_a_sprime[state][act]/N_s_a[state][act]))
 					#lower_secondterm = mdp.discountFactor*sum(Vlower[ss]*N_s_a_sprime[state][act][ss]/N_s_a[state][act] for ss in range(mdp.numStates))  
@@ -123,6 +124,8 @@ def mbie(mdp, start_state=0, epsilon=4, delta=0.1):
 			if(np.linalg.norm(oldQlower-Qlower[start_state])<=epsilon_convergence):
 				# print "Stopping with ", internal, "iterations"
 				break		
+
+		print np.linalg.norm(QupperMBAE)
 
 
 	return best_policy
