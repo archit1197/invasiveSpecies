@@ -93,20 +93,15 @@ def LUCBEpisodic(mdp, start_state=0, epsilon=4, delta=0.1, fileprint=1):
 		else:
 			state1 = nextstate
 		actionsList = bestTwoActions(mdp, state1, Qlower, Qupper)
-		for a in range(len(actionsList)):
-			iteration += 1
-			sampled_frequency_s_a[state1][actionsList[a]] += 1
-			
-			# Simluate the MDP with this state,action and update counts
-			#### TRying 10 continuous simulations 
-			for t in range(1):
-				s_prime, r = mdp.simulate(state1, actionsList[a])
-				if(a==0):
-					nextstate = s_prime
-				rewards_s_a_sprime[state1][actionsList[a]][s_prime] += r
-				N_s_a_sprime[state1][actionsList[a]][s_prime] += 1
+		a = np.random.choice(actionsList)
+		iteration += 1
+		sampled_frequency_s_a[state1][actionsList[a]] += 1
+		for t in range(1):
+			s_prime, r = mdp.simulate(state1, actionsList[a])
+			nextstate = s_prime
+			rewards_s_a_sprime[state1][actionsList[a]][s_prime] += r
+			N_s_a_sprime[state1][actionsList[a]][s_prime] += 1
 		
-		act1 = actionsList[0]
 		# Calculations for Qupper and Qlower
 		#### This involved a two for-loop and iterating convergence
 		
