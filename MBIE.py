@@ -56,7 +56,7 @@ def mbie(mdp, start_state=0, epsilon=4, delta=0.1):
 	current_state = start_state
 	### Repeat forever
 
-	# sys.stdout = open(mdp.filename+'-mbie.txt', 'w+')
+	sys.stdout = open(mdp.filename+'-mbie.txt', 'w+')
 	ff = open(mdp.filename+'-mbie-samples.txt', 'w+')
 
 	while True:
