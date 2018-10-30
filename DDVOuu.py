@@ -56,6 +56,7 @@ def ddvouu(mdp, start_state=0, epsilon=4, delta=0.1):
 	print P_s_a_sprime
 	print "Completed initial iterations"
 
+	sys.stdout = open(mdp.filename+'-lucb.txt', 'w+')
 	ff = open(mdp.filename+'-ddv-samples.txt', 'w+')
 	
 	# print Qupper, Vupper
@@ -109,6 +110,11 @@ def ddvouu(mdp, start_state=0, epsilon=4, delta=0.1):
 		for s2 in range(mdp.numStates):
 			# print current_state, current_action, s2, N_s_a_sprime[current_state][current_action][s2], N_s_a[current_state][current_action]
 			P_s_a_sprime[current_state][current_action][s2] = (float)(N_s_a_sprime[current_state][current_action][s2])/N_s_a[current_state][current_action]
+		if(samples%10000==0):
+				acList = bestTwoActions(mdp, start_state, Qlower, Qupper)
+				print samples, (QupperMBAE[start_state][acList[1]]-QlowerMBAE[start_state][acList[0]])/epsilon 
+				np.savetxt(ff, N_s_a, delimiter=',')
+				ff.write('\n')
 
 		### Calculating MBAE bounds
 		for internal in range(converge_iterations):
@@ -135,10 +141,6 @@ def ddvouu(mdp, start_state=0, epsilon=4, delta=0.1):
 				# print "Stopping with ", internal, "iterations"
 				break
 
-		if(samples%100==0):
-				acList = bestTwoActions(mdp, start_state, Qlower, Qupper)
-				print samples, (QupperMBAE[start_state][acList[1]]-QlowerMBAE[start_state][acList[0]])/epsilon 
-				np.savetxt(ff, N_s_a, delimiter=',')
-				ff.write('\n')
+		
 
 	return best_policy
