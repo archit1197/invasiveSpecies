@@ -56,7 +56,7 @@ def ddvouu(mdp, start_state=0, epsilon=4, delta=0.1):
 	print P_s_a_sprime
 	print "Completed initial iterations"
 
-	sys.stdout = open(mdp.filename+'-lucb.txt', 'w+')
+	sys.stdout = open(mdp.filename+'-ddv.txt', 'w+')
 	ff = open(mdp.filename+'-ddv-samples.txt', 'w+')
 	
 	# print Qupper, Vupper

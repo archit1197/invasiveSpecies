@@ -125,7 +125,7 @@ def mbie(mdp, start_state=0, epsilon=4, delta=0.1):
 				# print "Stopping with ", internal, "iterations"
 				break		
 
-		print np.linalg.norm(QupperMBAE)
+		# print np.linalg.norm(QupperMBAE)
 
 
 	return best_policy
