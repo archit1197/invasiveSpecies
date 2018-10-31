@@ -29,11 +29,13 @@ def ddvouu(mdp, start_state=0, epsilon=4, delta=0.1):
 	Qupper = mdp.Vmax*np.ones((mdp.numStates,mdp.numActions))
 	QupperMBAE = mdp.Vmax*np.ones((mdp.numStates,mdp.numActions))
 	Qlower = np.zeros((mdp.numStates,mdp.numActions))
+	Qstar = (mdp.Vmax/2)*np.ones((mdp.numStates,mdp.numActions))
 	QlowerMBAE = np.zeros((mdp.numStates,mdp.numActions))
 	Vupper = mdp.Vmax*np.ones((mdp.numStates))
 	VupperMBAE = mdp.Vmax*np.ones((mdp.numStates))
 	Vlower = np.zeros((mdp.numStates))
 	VlowerMBAE = np.zeros((mdp.numStates))
+	Vstar = (mdp.Vmax/2)*np.ones((mdp.numStates))
 	best_policy = (-1)*np.ones((mdp.numStates), dtype=np.int)
 	deltadeltaV = np.zeros((mdp.numStates,mdp.numActions))
 	discovered_states = set([start_state])
@@ -71,12 +73,13 @@ def ddvouu(mdp, start_state=0, epsilon=4, delta=0.1):
 					P_tilda[i][j] = UpperP(i,j,delta,N_s_a_sprime[i][j],mdp.numStates,Vupper,False)
 					P_lower_tilda[i][j] = LowerP(i,j,delta,N_s_a_sprime[i][j],mdp.numStates,Vupper,False)
 
+		##Calculate Q values
 		Qupper, Vupper = iteratedConvergence(Qupper,R_s_a,P_tilda,mdp.discountFactor, epsilon, converge_iterations, epsilon_convergence)
 		Qlower, Vlower = iteratedConvergence(Qlower,R_s_a,P_lower_tilda,mdp.discountFactor, epsilon, converge_iterations, epsilon_convergence)	
 
 		current_state = start_state
 
-		# print Qupper
+		### Terminating condition
 		if(Vupper[start_state]-Vlower[start_state]<=0):
 			print Qupper[start_state],Vupper[start_state], Vlower[start_state]
 			policy_lower = np.argmax(Qlower, axis=1)
@@ -84,21 +87,16 @@ def ddvouu(mdp, start_state=0, epsilon=4, delta=0.1):
 			print "Returning policy because of epsilon-convergence"
 			return policy_lower
 
-		### For all the explored or observed states, calculate del-delV 
-		# explored_states = filter(lambda x: np.sum(N_s_a[x])>0, range(mdp.numStates))
-		# observed_states = filter(lambda x: np.sum(N_s_a_sprime, axis=2)[x]>0, range(mdp.numStates))
-
+		## Caclulate deldelV for all states
 		for st in list(discovered_states):
 			for ac in range(mdp.numActions):
 				#### Compute del del V
 				deltadeltaV[st][ac] = CalculateDelDelV(st,ac,mdp,N_s_a_sprime, Qupper, Qlower, Vupper, Vlower, start_state, P_s_a_sprime, P_tilda, P_lower_tilda, R_s_a, epsilon, delta)
 
-		# print deltadeltaV
 		#### Simulate greedily wrt deldelV
 		curent_state, current_action = np.unravel_index(deltadeltaV.argmax(), deltadeltaV.shape)
 		ss,rr = mdp.simulate(current_state, current_action)
-		# print "Choosing ", current_state, current_action
-		# print P_s_a_sprime
+		
 		#### Add received state to the set of discovered states
 		discovered_states.add(ss)
 		
@@ -126,21 +124,21 @@ def ddvouu(mdp, start_state=0, epsilon=4, delta=0.1):
 					secondterm = mdp.discountFactor*np.sum(VupperMBAE*(N_s_a_sprime[state][act]/N_s_a[state][act]))
 					#secondterm = mdp.discountFactor*sum(Vupper[ss]*N_s_a_sprime[state][act][ss]/N_s_a[state][act] for ss in range(mdp.numStates))  
 					lower_secondterm = mdp.discountFactor*np.sum(VlowerMBAE*(N_s_a_sprime[state][act]/N_s_a[state][act]))
+					star_secondterm = mdp.discountFactor*np.sum(Vstar*(N_s_a_sprime[state][act]/N_s_a[state][act]))
 					#lower_secondterm = mdp.discountFactor*sum(Vlower[ss]*N_s_a_sprime[state][act][ss]/N_s_a[state][act] for ss in range(mdp.numStates))  
 					thirdterm = mdp.Vmax*math.sqrt((math.log(c*(samples**2)*mdp.numStates*mdp.numActions)-math.log(delta))/N_s_a[state][act])
 					#Qupper[state][act] = (float)(sum(rewards_s_a_sprime[state][act][ss] for ss in range(mdp.numStates))/N_s_a[state][act]) + secondterm + thirdterm
 					QupperMBAE[state][act] = firstterm + secondterm + thirdterm
 					Qlower[state][act] = firstterm + lower_secondterm - thirdterm
-
+					Qstar[state][act] = firstterm + star_secondterm
 					# Calculation for Vstar
 					# t = (float)N_s_a_sprime[state][act][stateprime]/N_s_a[state][act]
 					# val = t*(rewards_s_a[state][act][stateprime]+mdp.discountFactor*Vstar[stateprime])
 				VupperMBAE[state] = np.amax(QupperMBAE[state])
 				VlowerMBAE[state] = np.amax(QlowerMBAE[state])
+				Vstar[state] = np.amax(Qstar[state])
 			if(np.linalg.norm(oldQlower-QlowerMBAE[start_state])<=epsilon_convergence):
 				# print "Stopping with ", internal, "iterations"
 				break
-
-		
 
 	return best_policy

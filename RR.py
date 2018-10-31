@@ -91,17 +91,19 @@ def RoundRobin(mdp, start_state=0, epsilon=4, delta=0.1):
 						secondterm = mdp.discountFactor*np.sum(Vupper*(N_s_a_sprime[state][act]/sampled_frequency_s_a[state][act]))
 						#secondterm = mdp.discountFactor*sum(Vupper[ss]*N_s_a_sprime[state][act][ss]/sampled_frequency_s_a[state][act] for ss in range(mdp.numStates))  
 						lower_secondterm = mdp.discountFactor*np.sum(Vlower*(N_s_a_sprime[state][act]/sampled_frequency_s_a[state][act]))
+						star_secondterm = mdp.discountFactor*np.sum(Vstar*(N_s_a_sprime[state][act]/sampled_frequency_s_a[state][act]))
 						#lower_secondterm = mdp.discountFactor*sum(Vlower[ss]*N_s_a_sprime[state][act][ss]/sampled_frequency_s_a[state][act] for ss in range(mdp.numStates))  
 						thirdterm = mdp.Vmax*math.sqrt((math.log(c*(iteration**2)*mdp.numStates*mdp.numActions)-math.log(delta))/sampled_frequency_s_a[state][act])
 						#Qupper[state][act] = (float)(sum(rewards_s_a_sprime[state][act][ss] for ss in range(mdp.numStates))/sampled_frequency_s_a[state][act]) + secondterm + thirdterm
 						Qupper[state][act] = firstterm + secondterm + thirdterm
 						Qlower[state][act] = firstterm + lower_secondterm - thirdterm
-
+						Qstar[state][act] = firstterm + star_secondterm
 						# Calculation for Vstar
 						# t = (float)N_s_a_sprime[state][act][stateprime]/sampled_frequency_s_a[state][act]
 						# val = t*(rewards_s_a[state][act][stateprime]+mdp.discountFactor*Vstar[stateprime])
 					Vupper[state] = np.amax(Qupper[state])
 					Vlower[state] = np.amax(Qlower[state])
+					Vstar[state] = np.amax(Qstar[state])
 
 		count = 0
 		# print iteration, (Qupper[start_state][acList[1]]-Qlower[start_state][acList[0]])/epsilon, sampled_frequency_s_a
@@ -110,6 +112,7 @@ def RoundRobin(mdp, start_state=0, epsilon=4, delta=0.1):
 			np.savetxt(ff, sampled_frequency_s_a, delimiter=',')
 			ff.write('\n')
 			# print iteration
+
 		
 		#### Check epsilon condition for all the states
 		# for st in range(mdp.numStates):
@@ -122,21 +125,21 @@ def RoundRobin(mdp, start_state=0, epsilon=4, delta=0.1):
 		# 		count+=1
 
 		#### Check epsilon condition for only starting state
-		acList = bestTwoActions(mdp, start_state, Qstar, Qupper)
+		acList = bestTwoActions(mdp, start_state, Qstar, Qupper, Qstar)
 		if(Qupper[start_state][acList[1]]-Qlower[start_state][acList[0]]<epsilon*(1-mdp.discountFactor)/2):
 		# if(count==mdp.numStates):
-			acList = bestTwoActions(mdp, start_state, Qlower, Qupper)
+			acList = bestTwoActions(mdp, start_state, Qlower, Qupper, Qstar)
 			print "Setting final_policy of ", start_state, " to", acList[0] 
 			final_policy[start_state] = acList[0]
 			print "Iterations taken : ", iteration
 			print "Returning the policy :", final_policy
 			for i in range(mdp.numStates):
 				if(final_policy[i]==-1):
-					final_policy[i] = bestTwoActions(mdp,i,Qlower,Qupper)[0]
+					final_policy[i] = bestTwoActions(mdp,i,Qlower,Qupper, Qstar)[0]
 			return final_policy
 
 
 	for i in range(mdp.numStates):
 		if(final_policy[i]==-1):
-			final_policy[i] = bestTwoActions(mdp,i,Qlower,Qupper)[0]
+			final_policy[i] = bestTwoActions(mdp,i,Qlower,Qupper, Qstar)[0]
 	return final_policy

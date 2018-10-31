@@ -5,7 +5,7 @@ import sys
 import time
 from util import bestTwoActions, UpperP, LowerP, iteratedConvergence
 
-def LUCBEpisodic(mdp, start_state=0, epsilon=4, delta=0.1, fileprint=1):
+def LUCBBound(mdp, start_state=0, epsilon=4, delta=0.1, fileprint=1):
 	global MAX_ITERATION_LIMIT, c
 	iteration = 0
 	it=0
@@ -84,8 +84,8 @@ def LUCBEpisodic(mdp, start_state=0, epsilon=4, delta=0.1, fileprint=1):
 	
 	print "Initial estimate of QupperMBAE found! Now sampling"
 
-	sys.stdout = open(mdp.filename+'-lucbeps.txt', 'w+')
-	ff = open(mdp.filename+'-lucbeps-samples.txt', 'w+')
+	sys.stdout = open(mdp.filename+'-lucbbound.txt', 'w+')
+	ff = open(mdp.filename+'-lucbbound-samples.txt', 'w+')
 
 	h=0
 	state1 = start_state
@@ -100,7 +100,7 @@ def LUCBEpisodic(mdp, start_state=0, epsilon=4, delta=0.1, fileprint=1):
 			h = 0
 		else:
 			state1 = nextstate
-		actionsList = bestTwoActions(mdp, state1, QlowerMBAE, QupperMBAE, Qstar)
+		actionsList = bestTwoActions(mdp, state1, Qlower, Qupper, Qstar)
 		a = np.random.choice(actionsList)
 		iteration += 1
 		sampled_frequency_s_a[state1][a] += 1
@@ -171,10 +171,10 @@ def LUCBEpisodic(mdp, start_state=0, epsilon=4, delta=0.1, fileprint=1):
 		##### Updating the list of coliliding states
 		states_to_sample = []
 		for st in range(mdp.numStates):
-			acList = bestTwoActions(mdp, st, QlowerMBAE, QupperMBAE, Qstar)
+			acList = bestTwoActions(mdp, st, Qlower, Qupper, Qstar)
 			# colliding_values[st] = QupperMBAE[st][acList[1]]-QlowerMBAE[st][acList[0]]-epsilon
 			##### Changing stopping condition to epsilon*(1-gamma)/2
-			colliding_values[st] = QupperMBAE[st][acList[1]]-QlowerMBAE[st][acList[0]]-epsilon*(1-mdp.discountFactor)/2
+			colliding_values[st] = Qupper[st][acList[1]]-Qlower[st][acList[0]]-epsilon*(1-mdp.discountFactor)/2
 			# print colliding_values[st]
 			if(colliding_values[st]>0):
 				### this state is still colliding, add to sample states
@@ -183,14 +183,14 @@ def LUCBEpisodic(mdp, start_state=0, epsilon=4, delta=0.1, fileprint=1):
 		#### Check epsilon condition for only starting state
 		if(not (start_state in states_to_sample)):
 		# if(count==mdp.numStates):
-			acList = bestTwoActions(mdp, start_state, QlowerMBAE, QupperMBAE, Qstar)
+			acList = bestTwoActions(mdp, start_state, Qlower, Qupper, Qstar)
 			print "Setting final_policy of ", start_state, " to", acList[0] 
 			final_policy[start_state] = acList[0]
 			print "Iterations taken : ", iteration
 			print "Returning the policy :", final_policy
 			for i in range(mdp.numStates):
 				if(final_policy[i]==-1):
-					final_policy[i] = bestTwoActions(mdp,i,QlowerMBAE,QupperMBAE, Qstar)[0]
+					final_policy[i] = bestTwoActions(mdp,i,Qlower,Qupper, Qstar)[0]
 			return final_policy
 
 		h+=1
@@ -198,5 +198,5 @@ def LUCBEpisodic(mdp, start_state=0, epsilon=4, delta=0.1, fileprint=1):
 
 	for i in range(mdp.numStates):
 		if(final_policy[i]==-1):
-			final_policy[i] = bestTwoActions(mdp,i,QlowerMBAE,QupperMBAE, Qstar)[0]
+			final_policy[i] = bestTwoActions(mdp,i,Qlower,Qupper, Qstar)[0]
 	return final_policy

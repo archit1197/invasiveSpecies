@@ -48,12 +48,13 @@ def LUCBStopping(mdp, start_state=0, epsilon=4, delta=0.1, fileprint=1):
 				secondterm = mdp.discountFactor*np.sum(Vupper*(N_s_a_sprime[state][act]/sampled_frequency_s_a[state][act]))
 				#secondterm = mdp.discountFactor*sum(Vupper[ss]*N_s_a_sprime[state][act][ss]/sampled_frequency_s_a[state][act] for ss in range(mdp.numStates))  
 				lower_secondterm = mdp.discountFactor*np.sum(Vlower*(N_s_a_sprime[state][act]/sampled_frequency_s_a[state][act]))
+				star_secondterm = mdp.discountFactor*np.sum(Vstar*(N_s_a_sprime[state][act]/sampled_frequency_s_a[state][act]))
 				#lower_secondterm = mdp.discountFactor*sum(Vlower[ss]*N_s_a_sprime[state][act][ss]/sampled_frequency_s_a[state][act] for ss in range(mdp.numStates))  
 				thirdterm = mdp.Vmax*math.sqrt((math.log(c*mdp.numStates*mdp.numActions)-math.log(delta))/sampled_frequency_s_a[state][act])
 				#Qupper[state][act] = (float)(sum(rewards_s_a_sprime[state][act][ss] for ss in range(mdp.numStates))/sampled_frequency_s_a[state][act]) + secondterm + thirdterm
 				Qupper[state][act] = firstterm + secondterm + thirdterm
 				Qlower[state][act] = firstterm + lower_secondterm - thirdterm
-
+				Qstar[state][act] = firstterm + star_secondterm
 				# Calculation for Vstar
 				# t = (float)N_s_a_sprime[state][act][stateprime]/sampled_frequency_s_a[state][act]
 				# val = t*(rewards_s_a[state][act][stateprime]+mdp.discountFactor*Vstar[stateprime])
@@ -65,7 +66,7 @@ def LUCBStopping(mdp, start_state=0, epsilon=4, delta=0.1, fileprint=1):
 				# 	break
 			Vupper[state] = np.amax(Qupper[state])
 			Vlower[state] = np.amax(Qlower[state])
-
+			Vstar[state] = np.amax(Qstar[state])
 		if(np.linalg.norm(oldQlower-Qlower[start_state])<=epsilon_convergence):
 			print "Stopping with ", internal, "initial internal iterations"
 			break
@@ -84,7 +85,7 @@ def LUCBStopping(mdp, start_state=0, epsilon=4, delta=0.1, fileprint=1):
 		# print colliding_values
 		for state1 in max_collision_state:
 			# print "Sampling ", state1, "for this round"
-			actionsList = bestTwoActions(mdp, state1, Qlower, Qupper)
+			actionsList = bestTwoActions(mdp, state1, Qlower, Qupper, Qstar)
 			for act1 in actionsList:
 				iteration += 1
 				sampled_frequency_s_a[state1][act1] += 1
@@ -144,7 +145,7 @@ def LUCBStopping(mdp, start_state=0, epsilon=4, delta=0.1, fileprint=1):
 		##### Updating the list of coliliding states
 		states_to_sample = []
 		for st in range(mdp.numStates):
-			acList = bestTwoActions(mdp, st, Qlower, Qupper)
+			acList = bestTwoActions(mdp, st, Qlower, Qupper, Qstar)
 			# colliding_values[st] = Qupper[st][acList[1]]-Qlower[st][acList[0]]-epsilon
 			##### Changing stopping condition to epsilon*(1-gamma)/2
 			colliding_values[st] = Qupper[st][acList[1]]-Qlower[st][acList[0]]-epsilon*(1-mdp.discountFactor)/2
@@ -156,18 +157,18 @@ def LUCBStopping(mdp, start_state=0, epsilon=4, delta=0.1, fileprint=1):
 		#### Check epsilon condition for only starting state
 		if(not (start_state in states_to_sample)):
 		# if(count==mdp.numStates):
-			acList = bestTwoActions(mdp, start_state, Qlower, Qupper)
+			acList = bestTwoActions(mdp, start_state, Qlower, Qupper, Qstar)
 			print "Setting final_policy of ", start_state, " to", acList[0] 
 			final_policy[start_state] = acList[0]
 			print "Iterations taken : ", iteration
 			print "Returning the policy :", final_policy
 			for i in range(mdp.numStates):
 				if(final_policy[i]==-1):
-					final_policy[i] = bestTwoActions(mdp,i,Qlower,Qupper)[0]
+					final_policy[i] = bestTwoActions(mdp,i,Qlower,Qupper, Qstar)[0]
 			return final_policy
 
 
 	for i in range(mdp.numStates):
 		if(final_policy[i]==-1):
-			final_policy[i] = bestTwoActions(mdp,i,Qlower,Qupper)[0]
+			final_policy[i] = bestTwoActions(mdp,i,Qlower,Qupper, Qstar)[0]
 	return final_policy
