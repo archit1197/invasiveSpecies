@@ -5,6 +5,7 @@ from FIECHTER import FeichterPolicy
 from RR import RoundRobin
 from LUCB import LUCBStopping
 from LUCBepisodic import LUCBEpisodic
+from LUCBEpisodicBound import LUCBBound 
 from MBIE import mbie
 from DDVOuu import ddvouu
 
@@ -42,6 +43,9 @@ def main(argv):
 	elif(argv[2]=="lucb-eps"):
 		print "Doing LUCB episodic type algorithm"
 		print LUCBEpisodic(theMDP, 0, eps)
+	elif(argv[2]=="lucb-bou"):
+		print "Doing LUCB epi with MBIE bound type algorithm"
+		print LUCBBound(theMDP, 0, eps)
 	elif(argv[2]=="mbie"):
 		print "Doing MBIE-reset algorithm"
 		print mbie(theMDP, 0, eps)

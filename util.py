@@ -15,8 +15,14 @@ def CalculateValuePolicy(mdp, policy, H):
 
 	return total_reward
 
-def bestTwoActions(mdp, state, Qlower, Qupper):
-	actionsList =  Qupper[state].argsort()[-2:][::-1]
+def bestTwoActions(mdp, state, Qlower, Qupper, Qstar):
+	actionsList = []
+	actionsList.append(np.argmax(Qstar[state]))
+	a2 = np.argmax(Qupper[state])
+	if(actionsList[0]!=a2):
+		actionsList.append(a2)
+	else:
+		actionsList.append(Qupper[state].argsort()[-2:][::-1][1])
 	return actionsList
 
 def getBestPolicy(mdp, rewards, transitions):

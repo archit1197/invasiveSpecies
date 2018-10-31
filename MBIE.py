@@ -27,9 +27,11 @@ def mbie(mdp, start_state=0, epsilon=4, delta=0.1):
 	Qupper = mdp.Vmax*np.ones((mdp.numStates,mdp.numActions))
 	QupperMBAE = mdp.Vmax*np.ones((mdp.numStates,mdp.numActions))
 	Qlower = np.zeros((mdp.numStates,mdp.numActions))
+	Qstar = (mdp.Vmax/2)*np.ones((mdp.numStates,mdp.numActions))
 	Vupper = mdp.Vmax*np.ones((mdp.numStates))
 	VupperMBAE = mdp.Vmax*np.ones((mdp.numStates))
 	Vlower = np.zeros((mdp.numStates))
+	Vstar = (mdp.Vmax/2)*np.ones((mdp.numStates))
 	best_policy = (-1)*np.ones((mdp.numStates), dtype=np.int)
 	converge_iterations = 10000
 	epsilon_convergence = 1e-4
@@ -59,7 +61,7 @@ def mbie(mdp, start_state=0, epsilon=4, delta=0.1):
 	sys.stdout = open(mdp.filename+'-mbie.txt', 'w+')
 	ff = open(mdp.filename+'-mbie-samples.txt', 'w+')
 
-	while True:
+	while samples<MAX_ITERATION_LIMIT:
 
 		current_state = start_state
 		h=1
@@ -110,17 +112,19 @@ def mbie(mdp, start_state=0, epsilon=4, delta=0.1):
 					secondterm = mdp.discountFactor*np.sum(VupperMBAE*(N_s_a_sprime[state][act]/N_s_a[state][act]))
 					#secondterm = mdp.discountFactor*sum(Vupper[ss]*N_s_a_sprime[state][act][ss]/N_s_a[state][act] for ss in range(mdp.numStates))  
 					lower_secondterm = mdp.discountFactor*np.sum(Vlower*(N_s_a_sprime[state][act]/N_s_a[state][act]))
+					star_secondterm = mdp.discountFactor*np.sum(Vstar*(N_s_a_sprime[state][act]/N_s_a[state][act]))
 					#lower_secondterm = mdp.discountFactor*sum(Vlower[ss]*N_s_a_sprime[state][act][ss]/N_s_a[state][act] for ss in range(mdp.numStates))  
 					thirdterm = mdp.Vmax*math.sqrt((math.log(c*(samples**2)*mdp.numStates*mdp.numActions)-math.log(delta))/N_s_a[state][act])
 					#Qupper[state][act] = (float)(sum(rewards_s_a_sprime[state][act][ss] for ss in range(mdp.numStates))/N_s_a[state][act]) + secondterm + thirdterm
 					QupperMBAE[state][act] = firstterm + secondterm + thirdterm
 					Qlower[state][act] = firstterm + lower_secondterm - thirdterm
-
+					Qstar[state][act] = firstterm + star_secondterm
 					# Calculation for Vstar
 					# t = (float)N_s_a_sprime[state][act][stateprime]/N_s_a[state][act]
 					# val = t*(rewards_s_a[state][act][stateprime]+mdp.discountFactor*Vstar[stateprime])
 				VupperMBAE[state] = np.amax(QupperMBAE[state])
 				Vlower[state] = np.amax(Qlower[state])
+				Vstar[state] = np.amax(Qstar[state])
 			if(np.linalg.norm(oldQlower-Qlower[start_state])<=epsilon_convergence):
 				# print "Stopping with ", internal, "iterations"
 				break		
