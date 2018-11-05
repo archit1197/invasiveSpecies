@@ -81,7 +81,7 @@ int main(int argc, char const *argv[])
 
 			}
 			Vnew[i] = current_max_val;
-			if(abs(Vnew[i]-Vold[i])>=pow(10,-16))
+			if(abs(Vnew[i]-Vold[i])>=pow(10,-20))
 				is_terminate = false;
 
 			optimal_action[i] = current_max_action;

@@ -2,6 +2,7 @@ from constants import *
 import math
 import numpy as np
 import sys
+import time
 from util import iteratedConvergence, wL1Confidence, UpperP, bestTwoActions
 
 def mbie(mdp, start_state=0, epsilon=4, delta=0.1):
@@ -18,7 +19,7 @@ def mbie(mdp, start_state=0, epsilon=4, delta=0.1):
 	first_term = mdp.numStates/(epsilon**2*(1-mdp.discountFactor)**4)
 	second_term = math.log(mdp.numStates*mdp.numActions/(epsilon*(1-mdp.discountFactor)*delta))/(epsilon**2*(1-mdp.discountFactor)**4)
 	m = c*(first_term+second_term)
-	print "Chosen value of m is :", m
+	print "Chosen value of m is :",H, m
 	N_s_a = np.zeros((mdp.numStates,mdp.numActions))
 	N_s_a_sprime = np.zeros((mdp.numStates,mdp.numActions,mdp.numStates))
 	P_s_a_sprime = np.zeros((mdp.numStates,mdp.numActions,mdp.numStates))
@@ -33,8 +34,6 @@ def mbie(mdp, start_state=0, epsilon=4, delta=0.1):
 	Vlower = np.zeros((mdp.numStates))
 	Vstar = (mdp.Vmax/2)*np.ones((mdp.numStates))
 	best_policy = (-1)*np.ones((mdp.numStates), dtype=np.int)
-	converge_iterations = 10000
-	epsilon_convergence = 1e-4
 
 	### Initial sampling for all state action pairs
 	while it < initial_iterations:
@@ -58,16 +57,16 @@ def mbie(mdp, start_state=0, epsilon=4, delta=0.1):
 	current_state = start_state
 	### Repeat forever
 
-	sys.stdout = open(mdp.filename+'-mbie.txt', 'w+')
+	# sys.stdout = open(mdp.filename+'-mbie.txt', 'w+')
 	ff = open(mdp.filename+'-mbie-samples.txt', 'w+')
 
 	while samples<MAX_ITERATION_LIMIT:
-
 		current_state = start_state
 		h=1
+		print Qupper[start_state]
 		while h<=H:
 			if(samples%10000==0):
-				acList = bestTwoActions(mdp, start_state, Qlower, Qupper)
+				acList = bestTwoActions(mdp, start_state, Qlower, QupperMBAE, Qstar)
 				print samples, (QupperMBAE[start_state][acList[1]]-Qlower[start_state][acList[0]])/epsilon 
 				np.savetxt(ff, N_s_a, delimiter=',')
 				ff.write('\n')
@@ -128,8 +127,6 @@ def mbie(mdp, start_state=0, epsilon=4, delta=0.1):
 			if(np.linalg.norm(oldQlower-Qlower[start_state])<=epsilon_convergence):
 				# print "Stopping with ", internal, "iterations"
 				break		
-
-		# print np.linalg.norm(QupperMBAE)
 
 
 	return best_policy

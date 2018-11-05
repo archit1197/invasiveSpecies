@@ -28,8 +28,8 @@ echo "Executing mdp-CasinoLand fiechter"
 time python MDPclass.py mdp-CasinoLand.txt fiechter 3 > observations/mdp-CasinoLand-fiechter.txt
 
 
-python plot.py 4 riverswim-rr.txt riverswim-lucb.txt riverswim-lucbeps.txt riverswim-fiechter.txt
+python plot.py 4 riverswim-rr.txt riverswim-lucbeps.txt riverswim-fiechter.txt riverswim-ddv.txt
 
-python plot.py 4 SixArms-rr.txt SixArms-lucb.txt SixArms-lucbeps.txt SixArms-fiechter.txt
+python plot.py 6 SixArms-rr.txt SixArms-lucb.txt SixArms-lucbeps.txt SixArms-fiechter.txt SixArms-mbie.txt SixArms-ddv.txt
 
-python plot.py 4 CasinoLand-rr.txt CasinoLand-lucb.txt CasinoLand-lucbeps.txt CasinoLand-fiechter.txt
+python plot.py 5 CasinoLand-rr.txt CasinoLand-lucbeps.txt CasinoLand-fiechter.txt CasinoLand-mbie.txt CasinoLand-ddv.txt

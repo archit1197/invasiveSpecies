@@ -16,13 +16,16 @@ def CalculateValuePolicy(mdp, policy, H):
 	return total_reward
 
 def bestTwoActions(mdp, state, Qlower, Qupper, Qstar):
-	actionsList = []
-	actionsList.append(np.argmax(Qstar[state]))
-	a2 = np.argmax(Qupper[state])
-	if(actionsList[0]!=a2):
-		actionsList.append(a2)
-	else:
-		actionsList.append(Qupper[state].argsort()[-2:][::-1][1])
+	# actionsList = []
+	# actionsList.append(np.argmax(Qstar[state]))
+	# a2 = np.argmax(Qupper[state])
+	# if(actionsList[0]!=a2):
+	# 	actionsList.append(a2)
+	# else:
+	# 	actionsList.append(Qupper[state].argsort()[-2:][::-1][1])
+	# return actionsList
+
+	actionsList =  Qupper[state].argsort()[-2:][::-1]
 	return actionsList
 
 def getBestPolicy(mdp, rewards, transitions):
@@ -72,6 +75,7 @@ def hasConverged(a,b,epsilon=0.1):
 def iteratedConvergence(Qupper, R, P, gamma, epsilon, maxIterations, eps_convergence):
 	
 	for i in range(maxIterations):
+		# print Qupper[0]
 		temp = np.copy(Qupper)
 		Qmax_s = np.amax(Qupper,axis=1)
 		# print "Norm ", np.linalg.norm(Qmax_s)
@@ -79,21 +83,19 @@ def iteratedConvergence(Qupper, R, P, gamma, epsilon, maxIterations, eps_converg
 		Vupper = np.amax(Qupper,axis = 1)
 		if(hasConverged(Qupper, temp, eps_convergence)):
 			break
+
 	return Qupper, Vupper
 
 def wL1Confidence(N, delta, numStates):
 	return math.sqrt(2*(math.log(2**numStates-2)-math.log(delta))/N)
 
-def LowerP(state, action, delta, N_sprime, numStates, Vlower, good_turing, algo="mbie"):
+def LowerP(state, action, delta, N_sprime, numStates, Vlower, good_turing):
 	N_total = sum(N_sprime)
 
 	P_hat_sprime = [(float)(N_sprime[i])/N_total for i in range(numStates)]
 	P_tilda_sprime = [(float)(N_sprime[i])/N_total for i in range(numStates)]
 
-	if(algo=="mbie"):
-		delta_w = wL1Confidence(N_total,delta, numStates)/2
-	else:
-		delta_w = wL1Confidence(N_total+1,delta, numStates)/2
+	delta_w = wL1Confidence(N_total,delta, numStates)/2
 
 	if(good_turing):
 		delta_w = min(wL1Confidence(N_total,delta/2, numStates)/2,(1+math.sqrt(2))*math.sqrt(math.log(2/delta)/N_total))
@@ -122,16 +124,13 @@ def LowerP(state, action, delta, N_sprime, numStates, Vlower, good_turing, algo=
 	# print N_sprime, P_tilda_sprime
 	return P_tilda_sprime 
 
-def UpperP(state, action, delta, N_sprime, numStates, Vupper, good_turing, algo="mbie"):
+def UpperP(state, action, delta, N_sprime, numStates, Vupper, good_turing):
 	N_total = sum(N_sprime)
 
 	P_hat_sprime = [(float)(N_sprime[i])/N_total for i in range(numStates)]
 	P_tilda_sprime = [(float)(N_sprime[i])/N_total for i in range(numStates)]
 
-	if(algo=="mbie"):
-		delta_w = wL1Confidence(N_total, delta, numStates)/2
-	else:
-		delta_w = wL1Confidence(N_total+1, delta, numStates)/2
+	delta_w = wL1Confidence(N_total, delta, numStates)/2
 
 	if(good_turing):
 		delta_w = min(wL1Confidence(N_total,delta/2, numStates)/2,(1+math.sqrt(2))*math.sqrt(math.log(2/delta)/N_total))

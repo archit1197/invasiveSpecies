@@ -6,7 +6,7 @@ from util import LowerP, UpperP, CalculateDelDelV, iteratedConvergence, bestTwoA
 
 def ddvouu(mdp, start_state=0, epsilon=4, delta=0.1):
 
-	initial_iterations = 1000*mdp.numStates*mdp.numActions
+	initial_iterations = 1*mdp.numStates*mdp.numActions
 	### Estimate the horizon based on Fiechter
 	
 	c = 1
@@ -58,14 +58,14 @@ def ddvouu(mdp, start_state=0, epsilon=4, delta=0.1):
 	print P_s_a_sprime
 	print "Completed initial iterations"
 
-	sys.stdout = open(mdp.filename+'-ddv.txt', 'w+')
+	# sys.stdout = open(mdp.filename+'-ddv.txt', 'w+')
 	ff = open(mdp.filename+'-ddv-samples.txt', 'w+')
 	
 	# print Qupper, Vupper
 	current_state = start_state
 	### Repeat forever
 	while True:
-
+		print QupperMBAE
 		for i in range(mdp.numStates):
 			# print "For state ", i, " doing UpperP"
 			for j in range(mdp.numActions):
@@ -109,7 +109,7 @@ def ddvouu(mdp, start_state=0, epsilon=4, delta=0.1):
 			# print current_state, current_action, s2, N_s_a_sprime[current_state][current_action][s2], N_s_a[current_state][current_action]
 			P_s_a_sprime[current_state][current_action][s2] = (float)(N_s_a_sprime[current_state][current_action][s2])/N_s_a[current_state][current_action]
 		if(samples%10000==0):
-				acList = bestTwoActions(mdp, start_state, Qlower, Qupper)
+				acList = bestTwoActions(mdp, start_state, QlowerMBAE, QupperMBAE, Qstar)
 				print samples, (QupperMBAE[start_state][acList[1]]-QlowerMBAE[start_state][acList[0]])/epsilon 
 				np.savetxt(ff, N_s_a, delimiter=',')
 				ff.write('\n')
