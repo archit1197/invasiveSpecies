@@ -81,7 +81,7 @@ def LUCBEpisodic(mdp, start_state=0, epsilon=4, delta=0.1, fileprint=1):
 	Qlower = np.copy(QlowerMBAE)
 
 	if(verbose==0):
-		sys.stdout = open(mdp.filename+'-lucbeps.txt', 'w+')
+		outp = open(mdp.filename+'-lucbeps.txt', 'wb')
 	ff = open(mdp.filename+'-lucbeps-samples.txt', 'w+')
 
 	h=0
@@ -154,11 +154,14 @@ def LUCBEpisodic(mdp, start_state=0, epsilon=4, delta=0.1, fileprint=1):
 				break
 
 		count = 0
-		if(iteration%1000==0):
+		if(iteration%100==0):
 			acList = bestTwoActions(mdp, start_state, Qlower, Qupper, Qstar)
 				# print "Qupper, Qstar, Qlower"
 				# print Qupper[start_state], Qstar[start_state], Qlower[start_state]
-			print iteration, (Qupper[start_state][acList[1]]-Qlower[start_state][acList[0]])#-epsilon*(1-mdp.discountFactor)/2 
+			outp.write(str(iteration))
+			outp.write('\t')
+			outp.write(str(Qupper[start_state][acList[1]]-Qlower[start_state][acList[0]]))#-epsilon*(1-mdp.discountFactor)/2 
+			outp.write('\n')
 			np.savetxt(ff, sampled_frequency_s_a, delimiter=',')
 			ff.write('\n')
 
@@ -194,6 +197,9 @@ def LUCBEpisodic(mdp, start_state=0, epsilon=4, delta=0.1, fileprint=1):
 			return final_policy
 
 		h+=1
+
+	outp.close()
+	ff.close()
 
 	for i in range(mdp.numStates):
 		if(final_policy[i]==-1):
