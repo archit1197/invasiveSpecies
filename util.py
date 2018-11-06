@@ -100,7 +100,9 @@ def LowerP(state, action, delta, N_sprime, numStates, Vlower, good_turing):
 	if(good_turing):
 		delta_w = min(wL1Confidence(N_total,delta/2, numStates)/2,(1+math.sqrt(2))*math.sqrt(math.log(2/delta)/N_total))
 
-	while delta_w>0:
+	ite=0
+
+	while delta_w>0 and ite<100:
 		# print "delta_w is ", delta_w
 		recipient_states = [i for i in range(numStates) if P_tilda_sprime[i]<1]
 		# print "Recipient states ",recipient_states
@@ -120,6 +122,7 @@ def LowerP(state, action, delta, N_sprime, numStates, Vlower, good_turing):
 		P_tilda_sprime[recipient_s] += zeta
 
 		delta_w -= zeta
+		ite+=1
 
 	# print N_sprime, P_tilda_sprime
 	return P_tilda_sprime 
@@ -135,7 +138,9 @@ def UpperP(state, action, delta, N_sprime, numStates, Vupper, good_turing):
 	if(good_turing):
 		delta_w = min(wL1Confidence(N_total,delta/2, numStates)/2,(1+math.sqrt(2))*math.sqrt(math.log(2/delta)/N_total))
 
-	while delta_w>0:
+	ite=0
+
+	while delta_w>0 and ite<100:
 		# print "delta_w is ", delta_w
 		recipient_states = [i for i in range(numStates) if P_tilda_sprime[i]<1]
 		# print "Recipient states ",recipient_states
@@ -155,7 +160,7 @@ def UpperP(state, action, delta, N_sprime, numStates, Vupper, good_turing):
 		P_tilda_sprime[recipient_s] += zeta
 
 		delta_w -= zeta
-
+		ite+=1
 
 	return P_tilda_sprime 
 

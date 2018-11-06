@@ -5,7 +5,7 @@ import sys
 import time
 from util import bestTwoActions, UpperP, LowerP, iteratedConvergence
 
-verbose=0
+verbose=1
 
 def LUCBEpisodic(mdp, start_state=0, epsilon=4, delta=0.1, fileprint=1):
 	global MAX_ITERATION_LIMIT, c
@@ -158,10 +158,13 @@ def LUCBEpisodic(mdp, start_state=0, epsilon=4, delta=0.1, fileprint=1):
 			acList = bestTwoActions(mdp, start_state, Qlower, Qupper, Qstar)
 				# print "Qupper, Qstar, Qlower"
 				# print Qupper[start_state], Qstar[start_state], Qlower[start_state]
-			outp.write(str(iteration))
-			outp.write('\t')
-			outp.write(str(Qupper[start_state][acList[1]]-Qlower[start_state][acList[0]]))#-epsilon*(1-mdp.discountFactor)/2 
-			outp.write('\n')
+			if(verbose==0):
+				outp.write(str(iteration))
+				outp.write('\t')
+				outp.write(str(Qupper[start_state][acList[1]]-Qlower[start_state][acList[0]]))#-epsilon*(1-mdp.discountFactor)/2 
+				outp.write('\n')
+			else:
+				print iteration, Qupper[start_state][acList[1]]-Qlower[start_state][acList[0]] 
 			np.savetxt(ff, sampled_frequency_s_a, delimiter=',')
 			ff.write('\n')
 
