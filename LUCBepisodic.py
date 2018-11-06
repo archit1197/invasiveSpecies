@@ -5,7 +5,7 @@ import sys
 import time
 from util import bestTwoActions, UpperP, LowerP, iteratedConvergence
 
-verbose=1
+verbose=0
 
 def LUCBEpisodic(mdp, start_state=0, epsilon=4, delta=0.1, fileprint=1):
 	global MAX_ITERATION_LIMIT, c
@@ -197,6 +197,11 @@ def LUCBEpisodic(mdp, start_state=0, epsilon=4, delta=0.1, fileprint=1):
 			for i in range(mdp.numStates):
 				if(final_policy[i]==-1):
 					final_policy[i] = bestTwoActions(mdp,i,QlowerMBAE,QupperMBAE, Qstar)[0]
+
+			if(iteration!=51):
+				a = open('final'+mdp.filename+'-lucbeps.txt', 'a+')
+				a.write(str(iteration)+'\n')
+				a.close()
 			return final_policy
 
 		h+=1
