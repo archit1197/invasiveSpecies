@@ -89,13 +89,16 @@ def iteratedConvergence(Qupper, R, P, gamma, epsilon, maxIterations, eps_converg
 def wL1Confidence(N, delta, numStates):
 	return math.sqrt(2*(math.log(2**numStates-2)-math.log(delta))/N)
 
-def LowerP(state, action, delta, N_sprime, numStates, Vlower, good_turing):
+def LowerP(state, action, delta, N_sprime, numStates, Vlower, good_turing, algo="mbie"):
 	N_total = sum(N_sprime)
 
 	P_hat_sprime = [(float)(N_sprime[i])/N_total for i in range(numStates)]
 	P_tilda_sprime = [(float)(N_sprime[i])/N_total for i in range(numStates)]
 
-	delta_w = wL1Confidence(N_total,delta, numStates)/2
+	if(algo=="mbie"):
+		delta_w = wL1Confidence(N_total,delta, numStates)/2
+	else:
+		delta_w = wL1Confidence(N_total,delta, numStates)/2
 
 	if(good_turing):
 		delta_w = min(wL1Confidence(N_total,delta/2, numStates)/2,(1+math.sqrt(2))*math.sqrt(math.log(2/delta)/N_total))
@@ -127,13 +130,16 @@ def LowerP(state, action, delta, N_sprime, numStates, Vlower, good_turing):
 	# print N_sprime, P_tilda_sprime
 	return P_tilda_sprime 
 
-def UpperP(state, action, delta, N_sprime, numStates, Vupper, good_turing):
+def UpperP(state, action, delta, N_sprime, numStates, Vupper, good_turing, algo="mbie"):
 	N_total = sum(N_sprime)
 
 	P_hat_sprime = [(float)(N_sprime[i])/N_total for i in range(numStates)]
 	P_tilda_sprime = [(float)(N_sprime[i])/N_total for i in range(numStates)]
 
-	delta_w = wL1Confidence(N_total, delta, numStates)/2
+	if(algo=="mbie"):
+		delta_w = wL1Confidence(N_total,delta, numStates)/2
+	else:
+		delta_w = wL1Confidence(N_total+1,delta, numStates)/2
 
 	if(good_turing):
 		delta_w = min(wL1Confidence(N_total,delta/2, numStates)/2,(1+math.sqrt(2))*math.sqrt(math.log(2/delta)/N_total))

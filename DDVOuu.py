@@ -4,6 +4,8 @@ import numpy as np
 from pulp import *
 from util import LowerP, UpperP, CalculateDelDelV, iteratedConvergence, bestTwoActions
 
+verbose=0
+
 def ddvouu(mdp, start_state=0, epsilon=4, delta=0.1):
 
 	initial_iterations = 1*mdp.numStates*mdp.numActions
@@ -58,6 +60,8 @@ def ddvouu(mdp, start_state=0, epsilon=4, delta=0.1):
 	print P_s_a_sprime
 	print "Completed initial iterations"
 
+	if(verbose==0):
+		outp = open(mdp.filename+'-ddv.txt', 'wb')
 	# sys.stdout = open(mdp.filename+'-ddv.txt', 'w+')
 	ff = open(mdp.filename+'-ddv-samples.txt', 'w+')
 	
@@ -65,13 +69,13 @@ def ddvouu(mdp, start_state=0, epsilon=4, delta=0.1):
 	current_state = start_state
 	### Repeat forever
 	while True:
-		print QupperMBAE
+		# print Qupper[start_state], Qlower[start_state]
 		for i in range(mdp.numStates):
 			# print "For state ", i, " doing UpperP"
 			for j in range(mdp.numActions):
 				if(N_s_a[i][j]>0):
 					P_tilda[i][j] = UpperP(i,j,delta,N_s_a_sprime[i][j],mdp.numStates,Vupper,False)
-					P_lower_tilda[i][j] = LowerP(i,j,delta,N_s_a_sprime[i][j],mdp.numStates,Vupper,False)
+					P_lower_tilda[i][j] = LowerP(i,j,delta,N_s_a_sprime[i][j],mdp.numStates,Vlower,False)
 
 		##Calculate Q values
 		Qupper, Vupper = iteratedConvergence(Qupper,R_s_a,P_tilda,mdp.discountFactor, epsilon, converge_iterations, epsilon_convergence)
@@ -80,7 +84,13 @@ def ddvouu(mdp, start_state=0, epsilon=4, delta=0.1):
 		current_state = start_state
 
 		### Terminating condition
-		if(Vupper[start_state]-Vlower[start_state]<=0):
+		acList = bestTwoActions(mdp, start_state, Qlower, Qupper, Qstar)
+		coll = Qupper[start_state][acList[1]]-Qlower[start_state][acList[0]]-epsilon*(1-mdp.discountFactor)/2
+		# if(Vupper[start_state]-Vlower[start_state]<=epsilon and samples>50):
+		if(coll<0 and samples>50):
+			a = open('final'+mdp.filename+'-ddv.txt', 'a+')
+			a.write(str(samples)+'\n')
+			a.close()
 			print Qupper[start_state],Vupper[start_state], Vlower[start_state]
 			policy_lower = np.argmax(Qlower, axis=1)
 			print "Iteration number ", samples
@@ -108,9 +118,15 @@ def ddvouu(mdp, start_state=0, epsilon=4, delta=0.1):
 		for s2 in range(mdp.numStates):
 			# print current_state, current_action, s2, N_s_a_sprime[current_state][current_action][s2], N_s_a[current_state][current_action]
 			P_s_a_sprime[current_state][current_action][s2] = (float)(N_s_a_sprime[current_state][current_action][s2])/N_s_a[current_state][current_action]
-		if(samples%10000==0):
+		if(samples%10==0):
 				acList = bestTwoActions(mdp, start_state, QlowerMBAE, QupperMBAE, Qstar)
-				print samples, (QupperMBAE[start_state][acList[1]]-QlowerMBAE[start_state][acList[0]])/epsilon 
+				if(verbose==0):
+					outp.write(str(samples))
+					outp.write('\t')
+					outp.write(str(Qupper[start_state][acList[1]]-Qlower[start_state][acList[0]]))#-epsilon*(1-mdp.discountFactor)/2 
+					outp.write('\n')
+				else:
+					print samples, (Qupper[start_state][acList[1]]-Qlower[start_state][acList[0]])-epsilon*(1-mdp.discountFactor)/2
 				np.savetxt(ff, N_s_a, delimiter=',')
 				ff.write('\n')
 
@@ -129,7 +145,7 @@ def ddvouu(mdp, start_state=0, epsilon=4, delta=0.1):
 					thirdterm = mdp.Vmax*math.sqrt((math.log(c*(samples**2)*mdp.numStates*mdp.numActions)-math.log(delta))/N_s_a[state][act])
 					#Qupper[state][act] = (float)(sum(rewards_s_a_sprime[state][act][ss] for ss in range(mdp.numStates))/N_s_a[state][act]) + secondterm + thirdterm
 					QupperMBAE[state][act] = firstterm + secondterm + thirdterm
-					Qlower[state][act] = firstterm + lower_secondterm - thirdterm
+					QlowerMBAE[state][act] = firstterm + lower_secondterm - thirdterm
 					Qstar[state][act] = firstterm + star_secondterm
 					# Calculation for Vstar
 					# t = (float)N_s_a_sprime[state][act][stateprime]/N_s_a[state][act]
@@ -140,5 +156,10 @@ def ddvouu(mdp, start_state=0, epsilon=4, delta=0.1):
 			if(np.linalg.norm(oldQlower-QlowerMBAE[start_state])<=epsilon_convergence):
 				# print "Stopping with ", internal, "iterations"
 				break
+
+		if(samples==initial_iterations+2):
+			Qupper = np.copy(QupperMBAE)
+			Qlower = np.copy(QlowerMBAE)
+
 
 	return best_policy
