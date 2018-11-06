@@ -67,7 +67,7 @@ def RoundRobin(mdp, start_state=0, epsilon=4, delta=0.1):
 	Qlower = np.copy(QlowerMBAE)
 
 	if(verbose==0):
-		outp = open(mdp.filename+'-lucbeps.txt', 'wb')
+		outp = open(mdp.filename+'-rr.txt', 'wb')
 	ff = open(mdp.filename+'-rr-samples.txt', 'w+')
 
 	while iteration<MAX_ITERATION_LIMIT:
@@ -143,6 +143,9 @@ def RoundRobin(mdp, start_state=0, epsilon=4, delta=0.1):
 		if(Qupper[start_state][acList[1]]-Qlower[start_state][acList[0]]<epsilon*(1-mdp.discountFactor)/2 and iteration>50):
 		# if(count==mdp.numStates):
 			acList = bestTwoActions(mdp, start_state, QlowerMBAE, QupperMBAE, Qstar)
+			a = open('final'+mdp.filename+'-rr.txt', 'a+')
+			a.write(str(iteration)+'\n')
+			a.close()
 			print "Setting final_policy of ", start_state, " to", acList[0] 
 			final_policy[start_state] = acList[0]
 			print "Iterations taken : ", iteration
