@@ -13,20 +13,21 @@ int main(int argc, char const *argv[])
 	int nstates;
 	int nactions;
 	int start_state, end_state;
+	end_state=-1;
 	double discount_factor;
 	string word;
-	cin>>word;
-	if(word=="numStates")
+	// cin>>word;
+	// if(word=="numStates")
 		cin>>nstates;
-	cin>>word;
-	if(word=="numActions")
+	// cin>>word;
+	// if(word=="numActions")
 		cin>>nactions;
-	cin>>word;
-	if(word=="start")
-		cin>>start_state;
-	cin>>word;
-	if(word=="end")
-		cin>>end_state;
+	// cin>>word;
+	// if(word=="start")
+	// 	cin>>start_state;
+	// cin>>word;
+	// if(word=="end")
+	// 	cin>>end_state;
 	map<tuple<int,int> , vector<tuple<int,double> > > rewardmap;
 	map<tuple<int,int> , vector<tuple<int, double> > > transitionmap;
 	// double reward[nstates][nactions][nstates];
@@ -47,30 +48,60 @@ int main(int argc, char const *argv[])
 			// }
 		}
 	}
-	cin>>word;
-	while(word=="transitions")
+	// cin>>word;
+	for (int s1 = 0; s1 < nstates; ++s1)
 	{
-		int s1,s2,ac;
-		double r,p;
-		cin>>s1>>ac>>s2>>r>>p;
-		// transition[s1][ac][s2] = p;
-		// reward[s1][ac][s2] = r;
-
-		tuple<int, int> curtuple(s1,ac);
-		tuple<int, double> Ttuple(s2,p);
-		tuple<int, double> Rtuple(s2,r);
-		rewardmap[curtuple].push_back(Rtuple);
-		transitionmap[curtuple].push_back(Ttuple);
-		cin>>word;
-		// cout<<word<<(word=="transitions");
-
+		for (int ac = 0; ac < nactions; ++ac)
+		{
+			for (int s2 = 0; s2 < nstates; ++s2)
+			{
+				double r;
+				cin>>r;
+				tuple<int, int> curtuple(s1,ac);
+				// tuple<int, double> Ttuple(s2,p);
+				tuple<int, double> Rtuple(s2,r);
+				rewardmap[curtuple].push_back(Rtuple);
+				// transitionmap[curtuple].push_back(Ttuple);
+			}
+		}
 	}
-
-	if(word=="discount")
+	for (int s1 = 0; s1 < nstates; ++s1)
 	{
-		// cout<<"ASfasdfsdfgsdg";
-		cin>>discount_factor;
+		for (int ac = 0; ac < nactions; ++ac)
+		{
+			for (int s2 = 0; s2 < nstates; ++s2)
+			{
+				double p;
+				cin>>p;
+				tuple<int, int> curtuple(s1,ac);
+				tuple<int, double> Ttuple(s2,p);
+				// tuple<int, double> Rtuple(s2,r);
+				// rewardmap[curtuple].push_back(Rtuple);
+				transitionmap[curtuple].push_back(Ttuple);
+			}
+		}
 	}
+	// while(word=="transitions")
+	// {
+	// 	int s1,s2,ac;
+	// 	double r,p;
+	// 	cin>>s1>>ac>>s2>>r>>p;
+	// 	// transition[s1][ac][s2] = p;
+	// 	// reward[s1][ac][s2] = r;
+
+	// 	tuple<int, int> curtuple(s1,ac);
+	// 	tuple<int, double> Ttuple(s2,p);
+	// 	tuple<int, double> Rtuple(s2,r);
+	// 	rewardmap[curtuple].push_back(Rtuple);
+	// 	transitionmap[curtuple].push_back(Ttuple);
+	// 	cin>>word;
+	// 	// cout<<word<<(word=="transitions");
+
+	// }
+
+	// cout<<"ASfasdfsdfgsdg";
+	cin>>discount_factor;
+	
 	double * Vold;
 	double * Vnew;
 	int optimal_action[nstates];

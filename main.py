@@ -8,6 +8,7 @@ from LUCBepisodic import LUCBEpisodic
 from LUCBEpisodicBound import LUCBBound 
 from MBIE import mbie
 from DDVOuu import ddvouu
+from PolicyIt import policyIt
 
 def main(argv):
 	# print "Executing MDP"
@@ -30,28 +31,34 @@ def main(argv):
 	eps = eps_values[mdpname]
 	if(argv[2]=="uniform"):
 		print "Doing naive uniform sampling"
-		print UniformSampling(5, theMDP)
+		print "Final policy is : ", UniformSampling(5, theMDP)
 	elif(argv[2]=="fiechter"):
 		print "Doing Fiechter algorithm"
-		print FeichterPolicy(theMDP, 0, eps)
+		print "Final policy is : ", FeichterPolicy(theMDP, 0, eps)
 	elif(argv[2]=="rr"):
 		print "Doing Round robin"
-		print RoundRobin(theMDP, 0, eps)
+		print "Final policy is : ", RoundRobin(theMDP, 0, eps)
 	elif(argv[2]=="lucb"):
 		print "Doing LUCB type algorithm"
-		print LUCBStopping(theMDP, 0, eps)
+		print "Final policy is : ", LUCBStopping(theMDP, 0, eps)
 	elif(argv[2]=="lucb-eps"):
 		print "Doing LUCB episodic type algorithm"
-		print LUCBEpisodic(theMDP, 0, eps)
+		print "Final policy is : ", LUCBEpisodic(theMDP, 0, eps)
 	elif(argv[2]=="lucb-bou"):
 		print "Doing LUCB epi with MBIE bound type algorithm"
-		print LUCBBound(theMDP, 0, eps)
+		print "Final policy is : ", LUCBBound(theMDP, 0, eps)
 	elif(argv[2]=="mbie"):
 		print "Doing MBIE-reset algorithm"
-		print mbie(theMDP, 0, eps)
+		print "Final policy is : ", mbie(theMDP, 0, eps)
 	elif(argv[2]=="ddv-ouu"):
 		print "Doing DDV-OUU algorithm"
-		print ddvouu(theMDP, 0, eps)
+		print "Final policy is : ", ddvouu(theMDP, 0, eps)
+	elif(argv[2]=="policy"):
+		print "Doing policy iteration"
+		print "Final policy is : ", policyIt(theMDP, 0, eps)
+	else:
+		print "Unrecognized algorithm!"
+		print "Please try one of [uniform, fiechter, rr, lucb, mbie, ddv-ouu, policy]"
 
 
 def UniformSampling(times, mdp):
@@ -69,6 +76,6 @@ def UniformSampling(times, mdp):
 
 if __name__ == '__main__':
 	if(len(sys.argv)<3):
-		print "Usage : python MDPclass.py <mdpfile> <algorithm> [uniform, fiechter, lucb] <epsilon>"
+		print "Usage : python main.py <mdpfile> <algorithm> [uniform, fiechter, rr, lucb, mbie, ddv-ouu, policy] <epsilon>"
 	else:
 		main(sys.argv)

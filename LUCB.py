@@ -5,6 +5,8 @@ import sys
 import time
 from util import bestTwoActions
 
+verbose = 0
+
 def LUCBStopping(mdp, start_state=0, epsilon=4, delta=0.1, fileprint=1):
 	global MAX_ITERATION_LIMIT, c
 	iteration = 0
@@ -76,7 +78,9 @@ def LUCBStopping(mdp, start_state=0, epsilon=4, delta=0.1, fileprint=1):
 	
 	print "Initial estimate of Qupper found! Now sampling"
 
-	sys.stdout = open(mdp.filename+'-lucb.txt', 'w+')
+	if(verbose==0):
+		outp = open(mdp.filename+'-lucb.txt', 'wb')
+	# sys.stdout = open(mdp.filename+'-lucb.txt', 'w+')
 	ff = open(mdp.filename+'-lucb-samples.txt', 'w+')
 
 	while iteration<MAX_ITERATION_LIMIT:
@@ -125,10 +129,19 @@ def LUCBStopping(mdp, start_state=0, epsilon=4, delta=0.1, fileprint=1):
 						break
 
 		count = 0
-		if(iteration%10000==0):
-			print iteration, (Qupper[start_state][acList[1]]-Qlower[start_state][acList[0]])/epsilon 
+		if(iteration%100==0):
+			if (verbose==0):
+				outp.write(str(iteration))
+				outp.write('\t')
+				outp.write(str(Qupper[start_state][acList[1]]-Qlower[start_state][acList[0]]))#-epsilon*(1-mdp.discountFactor)/2 
+				outp.write('\n')
+			else:
+				print Qupper[start_state], Qlower[start_state]
+				# print d_h_policy_s[0][start_state]-2/(1-mdp.discountFactor)
+				# print samples, (QupperMBAE[start_state][acList[1]]-QlowerMBAE[start_state][acList[0]])-epsilon*(1-mdp.discountFactor)/2
 			np.savetxt(ff, sampled_frequency_s_a, delimiter=',')
 			ff.write('\n')
+			# print iteration, (Qupper[start_state][acList[1]]-Qlower[start_state][acList[0]])/epsilon 
 			# print Qupper
 			# print iteration
 		

@@ -20,6 +20,8 @@ for i in range(int(sys.argv[1])):
 
 	data1 = [item for sublist in data1 for item in sublist]
 
+	data1 = data1/np.sum(data1)
+
 	# data1=np.array(data1)
 	plt.plot(data1, label=sys.argv[i+2])
 

@@ -25,7 +25,7 @@ def bestTwoActions(mdp, state, Qlower, Qupper, Qstar):
 	# 	actionsList.append(Qupper[state].argsort()[-2:][::-1][1])
 	# return actionsList
 
-	actionsList =  Qupper[state].argsort()[-2:][::-1]
+	actionsList =  Qupper[state].argsort()[::-1][:2]
 	return actionsList
 
 def getBestPolicy(mdp, rewards, transitions):
@@ -85,6 +85,20 @@ def iteratedConvergence(Qupper, R, P, gamma, epsilon, maxIterations, eps_converg
 			break
 
 	return Qupper, Vupper
+
+def itConvergencePolicy(Qupper, R, P, gamma, epsilon, maxIterations, eps_convergence):
+	
+	for i in range(maxIterations):
+		# print Qupper[0]
+		temp = np.copy(Qupper)
+		# Qmax_s = np.amax(Qupper,axis=1)
+		# print "Norm ", np.linalg.norm(Qmax_s)
+		Qupper = R + gamma*np.sum(P*Qupper, axis=1)
+		# Vupper = np.amax(Qupper,axis = 1)
+		if(hasConverged(Qupper, temp, eps_convergence)):
+			break
+
+	return Qupper
 
 def wL1Confidence(N, delta, numStates):
 	return math.sqrt(2*(math.log(2**numStates-2)-math.log(delta))/N)
@@ -218,3 +232,25 @@ def CalculateDelDelV(state, action, mdp, N_s_a_sprime, Qupper, Qlower, Vupper, V
 
 	# print state, action, occupancies[state], deldelQ
 	return occupancies[state]*deldelQ
+
+
+def getPolicies(numStates, numActions):
+
+	if(numStates==1):
+		return range(numActions)
+
+	answer = []
+	prev_list = getPolicies(numStates-1, numActions)
+
+	for ac in range(numActions):
+		answer += list(map(lambda x: x + [ac] if isinstance(x, (list,)) else [ac,x], prev_list))
+
+	return answer
+
+def getRewards(R_s_a, policy):
+
+	return np.array([R_s_a[x][policy[x]] for x in range(R_s_a.shape[0])])
+
+def getProb(P_s_a_sprime, policy):
+
+	return np.array([P_s_a_sprime[x,policy[x],:] for x in range(P_s_a_sprime.shape[0])])

@@ -5,7 +5,7 @@ import sys
 import time
 from util import iteratedConvergence, wL1Confidence, UpperP, LowerP, bestTwoActions
 
-verbose=0
+verbose=1
 
 def mbie(mdp, start_state=0, epsilon=4, delta=0.1):
 
@@ -72,15 +72,15 @@ def mbie(mdp, start_state=0, epsilon=4, delta=0.1):
 		h=1
 		# print Qupper[start_state], Qstar[start_state], Qlower[start_state]
 		while h<=H:
-			if(samples%1000==0):
-				acList = bestTwoActions(mdp, start_state, Qlower, QupperMBAE, Qstar)
+			if(samples%100==0):
+				acList = bestTwoActions(mdp, start_state, QlowerMBAE, QupperMBAE, Qstar)
 				if(verbose==0):
 					outp.write(str(samples))
 					outp.write('\t')
-					outp.write(str(Qupper[start_state][acList[1]]-Qlower[start_state][acList[0]]))#-epsilon*(1-mdp.discountFactor)/2 
+					outp.write(str(QupperMBAE[start_state][acList[1]]-QlowerMBAE[start_state][acList[0]]))#-epsilon*(1-mdp.discountFactor)/2 
 					outp.write('\n')
 				else:
-					print samples, (Qupper[start_state][acList[1]]-Qlower[start_state][acList[0]])/epsilon 
+					print samples, (QupperMBAE[start_state][acList[1]]-QlowerMBAE[start_state][acList[0]])/epsilon 
 				np.savetxt(ff, N_s_a, delimiter=',')
 				ff.write('\n')
 			for i in range(mdp.numStates):

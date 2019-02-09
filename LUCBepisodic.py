@@ -129,7 +129,7 @@ def LUCBEpisodic(mdp, start_state=0, epsilon=4, delta=0.1, fileprint=1):
 
 		if(verbose==1):
 			# print "Calculated Q values are :"
-			print Qupper[start_state], Qstar[start_state], Qlower[start_state]
+			print QupperMBAE[start_state], Qstar[start_state], QlowerMBAE[start_state]
 
 		# Calculations for QupperMBAE and QlowerMBAE
 		#### This involved a two for-loop and iterating convergence
@@ -153,6 +153,8 @@ def LUCBEpisodic(mdp, start_state=0, epsilon=4, delta=0.1, fileprint=1):
 			if(np.linalg.norm(oldQlowerMBAE-QlowerMBAE[start_state])<=epsilon_convergence):
 				break
 
+
+
 		count = 0
 		if(iteration%100==0):
 			acList = bestTwoActions(mdp, start_state, Qlower, Qupper, Qstar)
@@ -161,10 +163,10 @@ def LUCBEpisodic(mdp, start_state=0, epsilon=4, delta=0.1, fileprint=1):
 			if(verbose==0):
 				outp.write(str(iteration))
 				outp.write('\t')
-				outp.write(str(Qupper[start_state][acList[1]]-Qlower[start_state][acList[0]]))#-epsilon*(1-mdp.discountFactor)/2 
+				outp.write(str(QupperMBAE[start_state][acList[1]]-QlowerMBAE[start_state][acList[0]]))#-epsilon*(1-mdp.discountFactor)/2 
 				outp.write('\n')
 			else:
-				print iteration, Qupper[start_state][acList[1]]-Qlower[start_state][acList[0]] 
+				print iteration, QupperMBAE[start_state][acList[1]]-QlowerMBAE[start_state][acList[0]] 
 			np.savetxt(ff, sampled_frequency_s_a, delimiter=',')
 			ff.write('\n')
 
@@ -172,9 +174,9 @@ def LUCBEpisodic(mdp, start_state=0, epsilon=4, delta=0.1, fileprint=1):
 		if(iteration>50):
 			states_to_sample = []
 			for st in range(mdp.numStates):
-				acList = bestTwoActions(mdp, st, Qlower, Qupper, Qstar)
+				acList = bestTwoActions(mdp, st, QlowerMBAE, QupperMBAE, Qstar)
 				##### Changing stopping condition to epsilon*(1-gamma)/2
-				colliding_values[st] = Qupper[st][acList[1]]-Qlower[st][acList[0]]-epsilon*(1-mdp.discountFactor)/2
+				colliding_values[st] = QupperMBAE[st][acList[1]]-QlowerMBAE[st][acList[0]]-epsilon*(1-mdp.discountFactor)/2
 				if(colliding_values[st]>0):
 					### this state is still colliding, add to sample states
 					states_to_sample.append(st)
@@ -189,7 +191,7 @@ def LUCBEpisodic(mdp, start_state=0, epsilon=4, delta=0.1, fileprint=1):
 		if(not (start_state in states_to_sample) and iteration>50):
 		# if(count==mdp.numStates):
 			acList = bestTwoActions(mdp, start_state, QlowerMBAE, QupperMBAE, Qstar)
-			print "Difference is ", Qupper[st][acList[1]]-Qlower[st][acList[0]]
+			print "Difference is ", Quppe[st][acList[1]]-Qlower[st][acList[0]]
 			print "Setting final_policy of ", start_state, " to", acList[0] 
 			final_policy[start_state] = acList[0]
 			print "Iterations taken : ", iteration

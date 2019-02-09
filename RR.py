@@ -125,22 +125,24 @@ def RoundRobin(mdp, start_state=0, epsilon=4, delta=0.1):
 
 		count = 0
 		# print iteration, (QupperMBAE[start_state][acList[1]]-QlowerMBAE[start_state][acList[0]])/epsilon, sampled_frequency_s_a
-		if(iteration%1==0):
+		if(iteration%100==0):
 			acList = bestTwoActions(mdp, start_state, Qlower, Qupper, Qstar)
 			if(verbose==0):
 				outp.write(str(iteration))
 				outp.write('\t')
-				outp.write(str(Qupper[start_state][acList[1]]-Qlower[start_state][acList[0]]))#-epsilon*(1-mdp.discountFactor)/2 
+				outp.write(str(QupperMBAE[start_state][acList[1]]-QlowerMBAE[start_state][acList[0]]))#-epsilon*(1-mdp.discountFactor)/2 
 				outp.write('\n')
 			else:
-				print iteration, (Qupper[start_state][acList[1]]-Qlower[start_state][acList[0]])
+				print iteration, (QupperMBAE[start_state][acList[1]]-QlowerMBAE[start_state][acList[0]])
+				# print iteration, (Qupper[start_state][acList[1]]-Qlower[start_state][acList[0]])
+
 			np.savetxt(ff, sampled_frequency_s_a, delimiter=',')
 			ff.write('\n')
 			# print iteration
 
 		#### Check epsilon condition for only starting state
 		acList = bestTwoActions(mdp, start_state, Qlower, Qupper, Qstar)
-		if(Qupper[start_state][acList[1]]-Qlower[start_state][acList[0]]<epsilon*(1-mdp.discountFactor)/2 and iteration>50):
+		if(QupperMBAE[start_state][acList[1]]-QlowerMBAE[start_state][acList[0]]<epsilon*(1-mdp.discountFactor)/2 and iteration>50):
 		# if(count==mdp.numStates):
 			acList = bestTwoActions(mdp, start_state, QlowerMBAE, QupperMBAE, Qstar)
 			a = open('final'+mdp.filename+'-rr.txt', 'a+')

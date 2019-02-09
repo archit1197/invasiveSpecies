@@ -4,7 +4,7 @@ import numpy as np
 import sys
 from util import getBestPolicy, bestTwoActions, UpperP, LowerP, iteratedConvergence
 
-verbose=0
+verbose=1
 
 def FeichterPolicy(mdp, start_state=0, epsilon=1, delta=0.1):
 	global c
@@ -34,6 +34,7 @@ def FeichterPolicy(mdp, start_state=0, epsilon=1, delta=0.1):
 	QlowerMBAE = np.zeros((mdp.numStates,mdp.numActions))
 	QupperMBAE = mdp.Vmax*np.ones((mdp.numStates,mdp.numActions))
 	Qupper = mdp.Vmax*np.random.random([mdp.numStates,mdp.numActions])
+	QstarMBAE = (mdp.Vmax/2)*np.ones((mdp.numStates,mdp.numActions))
 	Qstar = (mdp.Vmax/2)*np.ones((mdp.numStates,mdp.numActions))
 	VupperMBAE = mdp.Vmax*np.ones((mdp.numStates))
 	Vlower = np.zeros((mdp.numStates))
@@ -90,15 +91,16 @@ def FeichterPolicy(mdp, start_state=0, epsilon=1, delta=0.1):
 			current_state = s_prime
 			samples += 1
 			if(samples%100==0):
-				acList = bestTwoActions(mdp, start_state, Qlower, Qupper, Qstar)
+				acList = bestTwoActions(mdp, start_state, QlowerMBAE, QupperMBAE, QstarMBAE)
 				if(verbose==0):
 					outp.write(str(samples))
 					outp.write('\t')
-					outp.write(str(Qupper[start_state][acList[1]]-Qlower[start_state][acList[0]]))#-epsilon*(1-mdp.discountFactor)/2 
+					outp.write(str(QupperMBAE[start_state][acList[1]]-QlowerMBAE[start_state][acList[0]]))#-epsilon*(1-mdp.discountFactor)/2 
 					outp.write('\n')
 				else:
-					print d_h_policy_s[0][start_state]-2/(1-mdp.discountFactor)
-					print samples, (Qupper[start_state][acList[1]]-Qlower[start_state][acList[0]])-epsilon*(1-mdp.discountFactor)/2
+					print Qupper[start_state], Qlower[start_state]
+					# print d_h_policy_s[0][start_state]-2/(1-mdp.discountFactor)
+					# print samples, (QupperMBAE[start_state][acList[1]]-QlowerMBAE[start_state][acList[0]])-epsilon*(1-mdp.discountFactor)/2
 				np.savetxt(ff, sampled_frequency_s_a, delimiter=',')
 				ff.write('\n')
 				# print samples, d_h_policy_s[0][start_state]-2/(1-mdp.discountFactor) 
@@ -139,15 +141,14 @@ def FeichterPolicy(mdp, start_state=0, epsilon=1, delta=0.1):
 					#QupperMBAE[state][act] = (float)(sum(rewards_s_a_sprime[state][act][ss] for ss in range(mdp.numStates))/sampled_frequency_s_a[state][act]) + secondterm + thirdterm
 					QupperMBAE[state][act] = firstterm + secondterm + thirdterm
 					QlowerMBAE[state][act] = firstterm + lower_secondterm - thirdterm
-					Qstar[state][act] = firstterm + star_secondterm
+					QstarMBAE[state][act] = firstterm + star_secondterm
 					# Calculation for Vstar
 					# t = (float)N_s_a_sprime[state][act][stateprime]/sampled_frequency_s_a[state][act]
 					# val = t*(rewards_s_a[state][act][stateprime]+mdp.discountFactor*Vstar[stateprime])
 				VupperMBAE[state] = np.amax(QupperMBAE[state])
 				VlowerMBAE[state] = np.amax(QlowerMBAE[state])
-				Vstar[state] = np.amax(Qstar[state])
+				Vstar[state] = np.amax(QstarMBAE[state])
 			if(np.linalg.norm(oldQlowerMBAE-QlowerMBAE[start_state])<=epsilon_convergence):
-				# print "Stopping with ", internal, "iterations"
 				break
 
 		for i in range(mdp.numStates):
@@ -158,11 +159,11 @@ def FeichterPolicy(mdp, start_state=0, epsilon=1, delta=0.1):
 
 		Qupper, Vupper = iteratedConvergence(Qupper,R_s_a,P_tilda,mdp.discountFactor, epsilon, converge_iterations, epsilon_convergence)
 		Qlower, Vlower = iteratedConvergence(Qlower,R_s_a,P_lower_tilda,mdp.discountFactor, epsilon, converge_iterations, epsilon_convergence)
+		# Qstar, _ = iteratedConvergence(Qstar,R_s_a,P_,mdp.discountFactor, epsilon, converge_iterations, epsilon_convergence)
 			
 		iteration += 1
-		acList = bestTwoActions(mdp, start_state, Qlower, Qupper, Qstar)
-		coll = Qupper[start_state][acList[1]]-Qlower[start_state][acList[0]]-epsilon*(1-mdp.discountFactor)/2
-		# print d_h_policy_s
+		acList = bestTwoActions(mdp, start_state, QlowerMBAE, QupperMBAE, QstarMBAE)
+		coll = QupperMBAE[start_state][acList[1]]-QlowerMBAE[start_state][acList[0]]-epsilon*(1-mdp.discountFactor)/2
 	# sys.stdout = orig_stdout
 	# f.close()
 	print iteration
