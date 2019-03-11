@@ -4,7 +4,7 @@ import numpy as np
 import sys
 from util import getBestPolicy, bestTwoActions, UpperP, LowerP, iteratedConvergence
 
-verbose=1
+verbose=0
 
 def FeichterPolicy(mdp, start_state=0, epsilon=1, delta=0.1):
 	global c

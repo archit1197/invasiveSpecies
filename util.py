@@ -185,7 +185,7 @@ def UpperP(state, action, delta, N_sprime, numStates, Vupper, good_turing, algo=
 	return P_tilda_sprime 
 
 
-def CalculateDelDelV(state, action, mdp, N_s_a_sprime, Qupper, Qlower, Vupper, Vlower, start_state, P, P_tilda, P_lower_tilda, R_s_a, epsilon, delta):
+def CalculateDelDelV(state, action, mdp, N_s_a_sprime, Qupper, Qlower, Vupper, Vlower, start_state, P, P_tilda, P_lower_tilda, R_s_a, epsilon, delta, converge_iterations, epsilon_convergence):
 
 	Rmax = mdp.Vmax*(1-mdp.discountFactor)
 	deldelQ = -1
@@ -203,30 +203,41 @@ def CalculateDelDelV(state, action, mdp, N_s_a_sprime, Qupper, Qlower, Vupper, V
 		deldelQ = abs(Quppernew[state][action]-Qlowernew[state][action]+Qupper[state][action]-Qlower[state][action])
 
 	policy_ouu = np.argmax(Qupper, axis=1)
+	occupancies = np.ones((mdp.numStates))
 
-	#### Get occupancy measures 
-	mu_s = [0.0 for i in range(mdp.numStates)]
-	prob = LpProblem("Occupancy solver",LpMinimize)
-	for i in range(mdp.numStates):
-		mu_s[i] = LpVariable("Occupancy "+str(i), lowBound = 0 ,upBound = mdp.discountFactor/(1-mdp.discountFactor))
+	#**********************************************************************
+	# #### Get occupancy measures 
+	# mu_s = [0.0 for i in range(mdp.numStates)]
+	# prob = LpProblem("Occupancy solver",LpMinimize)
+	# for i in range(mdp.numStates):
+	# 	mu_s[i] = LpVariable("Occupancy "+str(i), lowBound = 0 ,upBound = mdp.discountFactor/(1-mdp.discountFactor))
 
 
-	prob += 1, "Dummy objective function"
+	# prob += 1, "Dummy objective function"
 
-	for st in range(mdp.numStates):
-		prob += mu_s[st] < mdp.discountFactor/(1-mdp.discountFactor)
-		prob += mu_s[st] > 0
-		if(st==start_state):
-			# rhs = lpSum(transitions[st][ac][sprime]*(rewards[st][ac][sprime]+gamma*V_s[sprime]) for sprime in range(numStates))
-			prob += mu_s[st] == 1 + mdp.discountFactor*lpSum([mu_s[sprime]*P[sprime][policy_ouu[sprime]][st] for sprime in range(mdp.numStates)])
-			# prob += V_s[st] >= sum(t*(r+2*v) for t,r,v,g in zip(transitions[st][ac],rewards[st][ac],V_s,gammaList))
-		else:
-			prob += mu_s[st] == mdp.discountFactor*lpSum([mu_s[sprime]*P[sprime][policy_ouu[sprime]][st] for sprime in range(mdp.numStates)])
-	prob.writeLP("MDPmodel.lp")
-	prob.solve()
-	# print "occupancy solved"
+	# for st in range(mdp.numStates):
+	# 	prob += mu_s[st] < mdp.discountFactor/(1-mdp.discountFactor)
+	# 	prob += mu_s[st] > 0
+	# 	if(st==start_state):
+	# 		# rhs = lpSum(transitions[st][ac][sprime]*(rewards[st][ac][sprime]+gamma*V_s[sprime]) for sprime in range(numStates))
+	# 		prob += mu_s[st] == 1 + mdp.discountFactor*lpSum([mu_s[sprime]*P[sprime][policy_ouu[sprime]][st] for sprime in range(mdp.numStates)])
+	# 		# prob += V_s[st] >= sum(t*(r+2*v) for t,r,v,g in zip(transitions[st][ac],rewards[st][ac],V_s,gammaList))
+	# 	else:
+	# 		prob += mu_s[st] == mdp.discountFactor*lpSum([mu_s[sprime]*P[sprime][policy_ouu[sprime]][st] for sprime in range(mdp.numStates)])
+	# prob.writeLP("MDPmodel.lp")
+	# prob.solve()
+	# # print "occupancy solved"
+	#**********************************************************************
 
-	occupancies = np.array([prob.variables()[i].varValue for i in range(mdp.numStates)])	
+	for j in range(converge_iterations):
+		oldOccupancies = np.copy(occupancies)
+		for st in range(mdp.numStates):
+			if (st==0):
+				occupancies[st] = 1 + mdp.discountFactor*np.sum(occupancies[sprime]*P[sprime][policy_ouu[sprime]][st] for sprime in range(mdp.numStates))
+			else:
+				occupancies[st] = mdp.discountFactor*np.sum(occupancies[sprime]*P[sprime][policy_ouu[sprime]][st] for sprime in range(mdp.numStates))
+		if(np.linalg.norm(oldOccupancies-occupancies)<=epsilon_convergence):
+			break
 	# print P[start_state][policy_ouu[start_state]] 
 	# print "occupancies", occupancies
 
@@ -243,7 +254,7 @@ def getPolicies(numStates, numActions):
 	prev_list = getPolicies(numStates-1, numActions)
 
 	for ac in range(numActions):
-		answer += list(map(lambda x: x + [ac] if isinstance(x, (list,)) else [ac,x], prev_list))
+		answer += list(map(lambda x: [ac] + x if isinstance(x, (list,)) else [ac,x], prev_list))
 
 	return answer
 
@@ -254,3 +265,26 @@ def getRewards(R_s_a, policy):
 def getProb(P_s_a_sprime, policy):
 
 	return np.array([P_s_a_sprime[x,policy[x],:] for x in range(P_s_a_sprime.shape[0])])
+
+def allOneNeighbours(current_policy, numActions):
+
+	answer = []
+	for st in range(len(current_policy)):
+		for ac in range(numActions):
+			if(ac==current_policy[st]):
+				continue
+			else:
+				temp = np.copy(current_policy)
+				temp[st] = ac
+				answer.append(temp)
+
+	return answer
+
+def indexOfPolicy(policy, numStates, numActions):
+
+	answer = 0
+
+	for i in range(len(policy)):
+		answer += policy[i]*(numActions**(numStates-i-1))
+
+	return answer

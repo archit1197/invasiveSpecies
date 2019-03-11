@@ -84,8 +84,8 @@ def ddvouu(mdp, start_state=0, epsilon=4, delta=0.1):
 		current_state = start_state
 
 		### Terminating condition
-		acList = bestTwoActions(mdp, start_state, Qlower, Qupper, Qstar)
-		coll = Qupper[start_state][acList[1]]-Qlower[start_state][acList[0]]-epsilon*(1-mdp.discountFactor)/2
+		acList = bestTwoActions(mdp, start_state, QlowerMBAE, QupperMBAE, Qstar)
+		coll = QupperMBAE[start_state][acList[1]]-QlowerMBAE[start_state][acList[0]]-epsilon*(1-mdp.discountFactor)/2
 		# if(Vupper[start_state]-Vlower[start_state]<=epsilon and samples>50):
 		if(coll<0 and samples>50):
 			a = open('final'+mdp.filename+'-ddv.txt', 'a+')
@@ -95,13 +95,18 @@ def ddvouu(mdp, start_state=0, epsilon=4, delta=0.1):
 			policy_lower = np.argmax(Qlower, axis=1)
 			print "Iteration number ", samples
 			print "Returning policy because of epsilon-convergence"
-			return policy_lower
+			print policy_lower
+			print np.argmax(QupperMBAE, axis=1)
+			print np.argmax(Qupper, axis=1)
+			print np.argmax(QlowerMBAE, axis=1)
+			print np.argmax(Qstar, axis=1)
+			# return policy_lower
 
 		## Caclulate deldelV for all states
 		for st in list(discovered_states):
 			for ac in range(mdp.numActions):
 				#### Compute del del V
-				deltadeltaV[st][ac] = CalculateDelDelV(st,ac,mdp,N_s_a_sprime, Qupper, Qlower, Vupper, Vlower, start_state, P_s_a_sprime, P_tilda, P_lower_tilda, R_s_a, epsilon, delta)
+				deltadeltaV[st][ac] = CalculateDelDelV(st,ac,mdp,N_s_a_sprime, Qupper, Qlower, Vupper, Vlower, start_state, P_s_a_sprime, P_tilda, P_lower_tilda, R_s_a, epsilon, delta, converge_iterations, epsilon_convergence)
 
 		#### Simulate greedily wrt deldelV
 		curent_state, current_action = np.unravel_index(deltadeltaV.argmax(), deltadeltaV.shape)
@@ -118,15 +123,16 @@ def ddvouu(mdp, start_state=0, epsilon=4, delta=0.1):
 		for s2 in range(mdp.numStates):
 			# print current_state, current_action, s2, N_s_a_sprime[current_state][current_action][s2], N_s_a[current_state][current_action]
 			P_s_a_sprime[current_state][current_action][s2] = (float)(N_s_a_sprime[current_state][current_action][s2])/N_s_a[current_state][current_action]
-		if(samples%10==0):
+		if(samples%100==0):
 				acList = bestTwoActions(mdp, start_state, QlowerMBAE, QupperMBAE, Qstar)
 				if(verbose==0):
 					outp.write(str(samples))
 					outp.write('\t')
-					outp.write(str(Qupper[start_state][acList[1]]-Qlower[start_state][acList[0]]))#-epsilon*(1-mdp.discountFactor)/2 
+					outp.write(str(QupperMBAE[start_state][acList[1]]-QlowerMBAE[start_state][acList[0]]))#-epsilon*(1-mdp.discountFactor)/2 
 					outp.write('\n')
+					print samples, (QupperMBAE[start_state][acList[1]]-QlowerMBAE[start_state][acList[0]])
 				else:
-					print samples, (Qupper[start_state][acList[1]]-Qlower[start_state][acList[0]])-epsilon*(1-mdp.discountFactor)/2
+					print samples, (QupperMBAE[start_state][acList[1]]-QlowerMBAE[start_state][acList[0]])
 				np.savetxt(ff, N_s_a, delimiter=',')
 				ff.write('\n')
 

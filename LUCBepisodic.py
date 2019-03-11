@@ -134,7 +134,6 @@ def LUCBEpisodic(mdp, start_state=0, epsilon=4, delta=0.1, fileprint=1):
 		# Calculations for QupperMBAE and QlowerMBAE
 		#### This involved a two for-loop and iterating convergence
 		for internal in range(converge_iterations):
-			
 			oldQlowerMBAE = np.copy(QlowerMBAE[start_state])
 			for state in range(mdp.numStates):
 				for act in range(mdp.numActions):
@@ -191,7 +190,7 @@ def LUCBEpisodic(mdp, start_state=0, epsilon=4, delta=0.1, fileprint=1):
 		if(not (start_state in states_to_sample) and iteration>50):
 		# if(count==mdp.numStates):
 			acList = bestTwoActions(mdp, start_state, QlowerMBAE, QupperMBAE, Qstar)
-			print "Difference is ", Quppe[st][acList[1]]-Qlower[st][acList[0]]
+			print "Difference is ", Qupper[st][acList[1]]-Qlower[st][acList[0]]
 			print "Setting final_policy of ", start_state, " to", acList[0] 
 			final_policy[start_state] = acList[0]
 			print "Iterations taken : ", iteration
