@@ -16,16 +16,15 @@ def CalculateValuePolicy(mdp, policy, H):
 	return total_reward
 
 def bestTwoActions(mdp, state, Qlower, Qupper, Qstar):
-	# actionsList = []
-	# actionsList.append(np.argmax(Qstar[state]))
-	# a2 = np.argmax(Qupper[state])
-	# if(actionsList[0]!=a2):
-	# 	actionsList.append(a2)
-	# else:
-	# 	actionsList.append(Qupper[state].argsort()[-2:][::-1][1])
-	# return actionsList
+	actionsList = []
+	actionsList.append(np.argmax(Qstar[state]))
+	a2 = np.argmax(Qupper[state])
+	if(actionsList[0]!=a2):
+		actionsList.append(a2)
+	else:
+		actionsList.append(Qupper[state].argsort()[::-1][1])
 
-	actionsList =  Qupper[state].argsort()[::-1][:2]
+	# actionsList =  Qupper[state].argsort()[::-1][:2]
 	return actionsList
 
 def getBestPolicy(mdp, rewards, transitions):
@@ -88,17 +87,19 @@ def iteratedConvergence(Qupper, R, P, gamma, epsilon, maxIterations, eps_converg
 
 def itConvergencePolicy(Qupper, R, P, gamma, epsilon, maxIterations, eps_convergence):
 	
+	Qval = np.copy(Qupper)
 	for i in range(maxIterations):
 		# print Qupper[0]
-		temp = np.copy(Qupper)
+		temp = np.copy(Qval)
 		# Qmax_s = np.amax(Qupper,axis=1)
 		# print "Norm ", np.linalg.norm(Qmax_s)
-		Qupper = R + gamma*np.sum(P*Qupper, axis=1)
+		# print P, Qval
+		Qval = R + gamma*np.sum(P*Qval, axis=1)
 		# Vupper = np.amax(Qupper,axis = 1)
-		if(hasConverged(Qupper, temp, eps_convergence)):
+		if(hasConverged(Qval, temp, eps_convergence)):
 			break
 
-	return Qupper
+	return Qval
 
 def wL1Confidence(N, delta, numStates):
 	return math.sqrt(2*(math.log(2**numStates-2)-math.log(delta))/N)
@@ -120,28 +121,19 @@ def LowerP(state, action, delta, N_sprime, numStates, Vlower, good_turing, algo=
 	ite=0
 
 	while delta_w>0 and ite<100:
-		# print "delta_w is ", delta_w
 		recipient_states = [i for i in range(numStates) if P_tilda_sprime[i]<1]
-		# print "Recipient states ",recipient_states
 		positive_states = [i for i in range(numStates) if P_tilda_sprime[i]>0]
-		### donor state
-		# print Vupper
 		donor_s = max(positive_states, key=lambda x: Vlower[x])
 		recipient_s = min(recipient_states, key=lambda x: Vlower[x])
-		# print "Donor recipient", donor_s, recipient_s
 		zeta = min(1-P_tilda_sprime[recipient_s], P_tilda_sprime[donor_s], delta_w)
 		if(not P_tilda_sprime[donor_s]>sys.float_info.epsilon):
 			break	
-		# print "Values are : ", 1-P_tilda_sprime[recipient_s], P_tilda_sprime[donor_s], delta_w
-
-		# print "Subtracting ", P_tilda_sprime[donor_s], zeta 
 		P_tilda_sprime[donor_s] -= zeta
 		P_tilda_sprime[recipient_s] += zeta
 
 		delta_w -= zeta
-		ite+=1
+		ite = ite + 1
 
-	# print N_sprime, P_tilda_sprime
 	return P_tilda_sprime 
 
 def UpperP(state, action, delta, N_sprime, numStates, Vupper, good_turing, algo="mbie"):
@@ -161,31 +153,44 @@ def UpperP(state, action, delta, N_sprime, numStates, Vupper, good_turing, algo=
 	ite=0
 
 	while delta_w>0 and ite<100:
-		# print "delta_w is ", delta_w
 		recipient_states = [i for i in range(numStates) if P_tilda_sprime[i]<1]
-		# print "Recipient states ",recipient_states
 		positive_states = [i for i in range(numStates) if P_tilda_sprime[i]>0]
 		### donor state
-		# print Vupper
 		donor_s = min(positive_states, key=lambda x: Vupper[x])
 		recipient_s = max(recipient_states, key=lambda x: Vupper[x])
-		# print "Donor recipient", donor_s, recipient_s
 		zeta = min(1-P_tilda_sprime[recipient_s], P_tilda_sprime[donor_s], delta_w)
 		if(not P_tilda_sprime[donor_s]>sys.float_info.epsilon):
 			break	
-		# print "Values are : ", 1-P_tilda_sprime[recipient_s], P_tilda_sprime[donor_s], delta_w
-
-		# print "Subtracting ", P_tilda_sprime[donor_s], zeta 
 		P_tilda_sprime[donor_s] -= zeta
 		P_tilda_sprime[recipient_s] += zeta
 
 		delta_w -= zeta
-		ite+=1
+		ite = ite + 1
+	# print "ite is ", ite
 
 	return P_tilda_sprime 
 
 
-def CalculateDelDelV(state, action, mdp, N_s_a_sprime, Qupper, Qlower, Vupper, Vlower, start_state, P, P_tilda, P_lower_tilda, R_s_a, epsilon, delta, converge_iterations, epsilon_convergence):
+def CalculateDelDelV(
+	state,
+	action,
+	mdp,
+	N_s_a_sprime,
+	Qupper,
+	Qlower,
+	Vupper,
+	Vlower,
+	start_state,
+	P,
+	P_tilda,
+	P_lower_tilda,
+	R_s_a,
+	epsilon,
+	delta,
+	converge_iterations,
+	epsilon_convergence,
+	policy_ouu = None
+	):
 
 	Rmax = mdp.Vmax*(1-mdp.discountFactor)
 	deldelQ = -1
@@ -194,15 +199,39 @@ def CalculateDelDelV(state, action, mdp, N_s_a_sprime, Qupper, Qlower, Vupper, V
 		deldelQ = mdp.Vmax - mdp.discountFactor*Rmax/(1-mdp.discountFactor)
 
 	else:
-		#### Calculate using changed w
-		# print N_s_a_sprime[state][action]
-		P_tilda[state][action] = UpperP(state,action,delta,N_s_a_sprime[state][action],mdp.numStates,Vupper,False,"ddv")
-		P_lower_tilda[state][action] = LowerP(state,action,delta,N_s_a_sprime[state][action],mdp.numStates,Vupper,False,"ddv")
-		Quppernew, Vuppernew = iteratedConvergence(Qupper,R_s_a,P_tilda,mdp.discountFactor, epsilon, converge_iterations, epsilon_convergence)
-		Qlowernew, Vlowernew = iteratedConvergence(Qlower,R_s_a,P_lower_tilda,mdp.discountFactor, epsilon, converge_iterations, epsilon_convergence)
-		deldelQ = abs(Quppernew[state][action]-Qlowernew[state][action]+Qupper[state][action]-Qlower[state][action])
+		if(policy_ouu is not None):
+			P_tilda[state] = UpperP(state,action,delta,N_s_a_sprime[state][action],mdp.numStates,Qupper,False,"ddv")
+			P_lower_tilda[state] = LowerP(state,action,delta,N_s_a_sprime[state][action],mdp.numStates,Qupper,False,"ddv")
+			Quppernew = itConvergencePolicy(
+				Qupper,
+				getRewards(R_s_a,policy_ouu),
+				P_tilda,
+				mdp.discountFactor, 
+				epsilon,
+				converge_iterations,
+				epsilon_convergence
+				)
+			Qlowernew = itConvergencePolicy(
+				Qlower,
+				getRewards(R_s_a,policy_ouu),
+				P_lower_tilda,
+				mdp.discountFactor,
+				epsilon,
+				converge_iterations,
+				epsilon_convergence
+				)
+			deldelQ = abs(Quppernew[state]-Qlowernew[state]+Qupper[state]-Qlower[state])
+		else:
+			#### Calculate using changed w
+			# print N_s_a_sprime[state][action]
+			P_tilda[state][action] = UpperP(state,action,delta,N_s_a_sprime[state][action],mdp.numStates,Vupper,False,"ddv")
+			P_lower_tilda[state][action] = LowerP(state,action,delta,N_s_a_sprime[state][action],mdp.numStates,Vupper,False,"ddv")
+			Quppernew, Vuppernew = iteratedConvergence(Qupper,R_s_a,P_tilda,mdp.discountFactor, epsilon, converge_iterations, epsilon_convergence)
+			Qlowernew, Vlowernew = iteratedConvergence(Qlower,R_s_a,P_lower_tilda,mdp.discountFactor, epsilon, converge_iterations, epsilon_convergence)
+			deldelQ = abs(Quppernew[state][action]-Qlowernew[state][action]+Qupper[state][action]-Qlower[state][action])
 
-	policy_ouu = np.argmax(Qupper, axis=1)
+	if policy_ouu is None:
+		policy_ouu = np.argmax(Qupper, axis=1)
 	occupancies = np.ones((mdp.numStates))
 
 	#**********************************************************************
@@ -229,6 +258,7 @@ def CalculateDelDelV(state, action, mdp, N_s_a_sprime, Qupper, Qlower, Vupper, V
 	# # print "occupancy solved"
 	#**********************************************************************
 
+	# print "P", P
 	for j in range(converge_iterations):
 		oldOccupancies = np.copy(occupancies)
 		for st in range(mdp.numStates):
@@ -236,12 +266,13 @@ def CalculateDelDelV(state, action, mdp, N_s_a_sprime, Qupper, Qlower, Vupper, V
 				occupancies[st] = 1 + mdp.discountFactor*np.sum(occupancies[sprime]*P[sprime][policy_ouu[sprime]][st] for sprime in range(mdp.numStates))
 			else:
 				occupancies[st] = mdp.discountFactor*np.sum(occupancies[sprime]*P[sprime][policy_ouu[sprime]][st] for sprime in range(mdp.numStates))
+		# print oldOccupancies, occupancies
 		if(np.linalg.norm(oldOccupancies-occupancies)<=epsilon_convergence):
 			break
 	# print P[start_state][policy_ouu[start_state]] 
 	# print "occupancies", occupancies
 
-	# print state, action, occupancies[state], deldelQ
+	# print state, action, occupancies[state], deldelQ, occupancies[state]*deldelQ
 	return occupancies[state]*deldelQ
 
 
@@ -288,3 +319,30 @@ def indexOfPolicy(policy, numStates, numActions):
 		answer += policy[i]*(numActions**(numStates-i-1))
 
 	return answer
+
+
+def getBestPairFromDDV(policy, mdp):
+	deltadeltaV = np.zeros((mdp.numStates))
+	for st in range(mdp.numStates):
+		ac = policy[st]
+		#### Compute del del V
+		deltadeltaV[st] = CalculateDelDelV(
+			st,
+			ac,
+			mdp,
+			N_s_a_sprime,
+			Qupper,
+			Qlower,
+			Vupper,
+			Vlower,
+			start_state,
+			P_s_a_sprime,
+			P_tilda,
+			P_lower_tilda,
+			R_s_a,
+			epsilon,
+			delta,
+			converge_iterations,
+			epsilon_convergence,
+			policy1Index
+			)

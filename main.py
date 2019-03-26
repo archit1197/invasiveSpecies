@@ -34,36 +34,37 @@ def main(argv):
 		start_state = random.randint(0,1)
 	else:
 		start_state = 0
-	if(argv[2]=="uniform"):
-		print "Doing naive uniform sampling"
-		print "Final policy is : ", UniformSampling(5, theMDP)
-	elif(argv[2]=="fiechter"):
-		print "Doing Fiechter algorithm"
-		print "Final policy is : ", FeichterPolicy(theMDP, start_state, eps)
-	elif(argv[2]=="rr"):
-		print "Doing Round robin"
-		print "Final policy is : ", RoundRobin(theMDP, start_state, eps)
-	elif(argv[2]=="lucb"):
-		print "Doing LUCB type algorithm"
-		print "Final policy is : ", LUCBStopping(theMDP, start_state, eps)
-	elif(argv[2]=="lucb-eps"):
-		print "Doing LUCB episodic type algorithm"
-		print "Final policy is : ", LUCBEpisodic(theMDP, start_state, eps)
-	elif(argv[2]=="lucb-bou"):
-		print "Doing LUCB epi with MBIE bound type algorithm"
-		print "Final policy is : ", LUCBBound(theMDP, start_state, eps)
-	elif(argv[2]=="mbie"):
-		print "Doing MBIE-reset algorithm"
-		print "Final policy is : ", mbie(theMDP, start_state, eps)
-	elif(argv[2]=="ddv-ouu"):
-		print "Doing DDV-OUU algorithm"
-		print "Final policy is : ", ddvouu(theMDP, start_state, eps)
-	elif(argv[2]=="policy"):
-		print "Doing policy iteration"
-		print "Final policy is : ", policyIt(theMDP, start_state, eps)
-	else:
-		print "Unrecognized algorithm!"
-		print "Please try one of [uniform, fiechter, rr, lucb, mbie, ddv-ouu, policy]"
+	for randomseed in seeds:
+		if(argv[2]=="uniform"):
+			print "Doing naive uniform sampling"
+			print "Final policy is : ", UniformSampling(5, theMDP)
+		elif(argv[2]=="fiechter"):
+			print "Doing Fiechter algorithm"
+			print "Final policy is : ", FeichterPolicy(theMDP, start_state, eps, randomseed)
+		elif(argv[2]=="rr"):
+			print "Doing Round robin"
+			print "Final policy is : ", RoundRobin(theMDP, start_state, eps, randomseed)
+		elif(argv[2]=="lucb"):
+			print "Doing LUCB type algorithm"
+			print "Final policy is : ", LUCBStopping(theMDP, start_state, eps)
+		elif(argv[2]=="lucb-eps"):
+			print "Doing LUCB episodic type algorithm"
+			print "Final policy is : ", LUCBEpisodic(theMDP, start_state, eps, randomseed)
+		elif(argv[2]=="lucb-bou"):
+			print "Doing LUCB epi with MBIE bound type algorithm"
+			print "Final policy is : ", LUCBBound(theMDP, start_state, eps)
+		elif(argv[2]=="mbie"):
+			print "Doing MBIE-reset algorithm"
+			print "Final policy is : ", mbie(theMDP, start_state, eps, randomseed)
+		elif(argv[2]=="ddv-ouu"):
+			print "Doing DDV-OUU algorithm"
+			print "Final policy is : ", ddvouu(theMDP, start_state, eps, randomseed)
+		elif(argv[2]=="policy"):
+			print "Doing policy iteration"
+			print "Final policy is : ", policyIt(theMDP, start_state, eps, randomseed)
+		else:
+			print "Unrecognized algorithm!"
+			print "Please try one of [uniform, fiechter, rr, lucb, mbie, ddv-ouu, policy]"
 
 
 def UniformSampling(times, mdp):

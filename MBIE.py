@@ -7,9 +7,11 @@ from util import iteratedConvergence, wL1Confidence, UpperP, LowerP, bestTwoActi
 
 verbose=0
 
-def mbie(mdp, start_state=0, epsilon=4, delta=0.1):
+def mbie(mdp, start_state=0, epsilon=4, randomseed=None, delta=0.1):
 
 	global c
+	if(randomseed is not None):
+		np.random.seed(randomseed)
 	initial_iterations = 1*mdp.numStates*mdp.numActions
 	### Estimate the horizon based on Fiechter
 	H = int((math.log(mdp.Vmax) + math.log(6.0/epsilon))/(1-mdp.discountFactor))
@@ -63,7 +65,7 @@ def mbie(mdp, start_state=0, epsilon=4, delta=0.1):
 	### Repeat forever
 
 	if(verbose==0):
-		outp = open(mdp.filename+'-mbie.txt', 'wb')
+		outp = open(mdp.filename+'-mbie' + str(randomseed) +'.txt', 'wb')
 	# sys.stdout = open(mdp.filename+'-mbie.txt', 'w+')
 	ff = open(mdp.filename+'-mbie-samples.txt', 'w+')
 

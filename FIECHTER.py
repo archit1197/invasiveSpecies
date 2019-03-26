@@ -6,8 +6,10 @@ from util import getBestPolicy, bestTwoActions, UpperP, LowerP, iteratedConverge
 
 verbose=0
 
-def FeichterPolicy(mdp, start_state=0, epsilon=1, delta=0.1):
+def FeichterPolicy(mdp, start_state=0, epsilon=1, randomseed=None, delta=0.1):
 	global c
+	if(randomseed is not None):
+		np.random.seed(randomseed)
 	# orig_stdout = sys.stdout
 	# f = open('Fiechter-m01.txt', 'w')
 	# sys.stdout = f
@@ -62,7 +64,7 @@ def FeichterPolicy(mdp, start_state=0, epsilon=1, delta=0.1):
 	iteration = 1
 
 	if(verbose==0):
-		outp = open(mdp.filename+'-fiechter.txt', 'wb')
+		outp = open(mdp.filename+'-fiechter' + str(randomseed) +'.txt', 'wb')
 	# sys.stdout = open(mdp.filename+'-fiechter.txt', 'w+')
 	ff = open(mdp.filename+'-fiechter-samples.txt', 'w+')
 

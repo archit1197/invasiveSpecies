@@ -5,8 +5,12 @@ from pulp import *
 from util import LowerP, UpperP, CalculateDelDelV, iteratedConvergence, bestTwoActions
 
 verbose=0
+use_mbae = True
 
-def ddvouu(mdp, start_state=0, epsilon=4, delta=0.1):
+def ddvouu(mdp, start_state=0, epsilon=4, randomseed=None, delta=0.1):
+
+	if(randomseed is not None):
+		np.random.seed(randomseed)
 
 	initial_iterations = 1*mdp.numStates*mdp.numActions
 	### Estimate the horizon based on Fiechter
@@ -61,31 +65,50 @@ def ddvouu(mdp, start_state=0, epsilon=4, delta=0.1):
 	print "Completed initial iterations"
 
 	if(verbose==0):
-		outp = open(mdp.filename+'-ddv.txt', 'wb')
+		outp = open(mdp.filename+'-ddv' + str(randomseed) +'.txt', 'wb')
 	# sys.stdout = open(mdp.filename+'-ddv.txt', 'w+')
 	ff = open(mdp.filename+'-ddv-samples.txt', 'w+')
 	
 	# print Qupper, Vupper
 	current_state = start_state
 	### Repeat forever
-	while True:
+	while samples<MAX_ITERATION_LIMIT:
 		# print Qupper[start_state], Qlower[start_state]
 		for i in range(mdp.numStates):
-			# print "For state ", i, " doing UpperP"
 			for j in range(mdp.numActions):
 				if(N_s_a[i][j]>0):
 					P_tilda[i][j] = UpperP(i,j,delta,N_s_a_sprime[i][j],mdp.numStates,Vupper,False)
 					P_lower_tilda[i][j] = LowerP(i,j,delta,N_s_a_sprime[i][j],mdp.numStates,Vlower,False)
 
 		##Calculate Q values
-		Qupper, Vupper = iteratedConvergence(Qupper,R_s_a,P_tilda,mdp.discountFactor, epsilon, converge_iterations, epsilon_convergence)
-		Qlower, Vlower = iteratedConvergence(Qlower,R_s_a,P_lower_tilda,mdp.discountFactor, epsilon, converge_iterations, epsilon_convergence)	
+		Qupper, Vupper = iteratedConvergence(
+			Qupper,
+			R_s_a,
+			P_tilda,
+			mdp.discountFactor,
+			epsilon,
+			converge_iterations,
+			epsilon_convergence
+			)
+		Qlower, Vlower = iteratedConvergence(
+			Qlower,
+			R_s_a,
+			P_lower_tilda,
+			mdp.discountFactor,
+			epsilon,
+			converge_iterations,
+			epsilon_convergence
+			)	
 
 		current_state = start_state
 
 		### Terminating condition
-		acList = bestTwoActions(mdp, start_state, QlowerMBAE, QupperMBAE, Qstar)
-		coll = QupperMBAE[start_state][acList[1]]-QlowerMBAE[start_state][acList[0]]-epsilon*(1-mdp.discountFactor)/2
+		if(use_mbae):
+			acList = bestTwoActions(mdp, start_state, QlowerMBAE, QupperMBAE, Qstar)
+			coll = QupperMBAE[start_state][acList[1]]-QlowerMBAE[start_state][acList[0]]-epsilon*(1-mdp.discountFactor)/2
+		else:
+			acList = bestTwoActions(mdp, start_state, Qlower, Qupper, Qstar)
+			coll = Qupper[start_state][acList[1]]-Qlower[start_state][acList[0]]-epsilon*(1-mdp.discountFactor)/2
 		# if(Vupper[start_state]-Vlower[start_state]<=epsilon and samples>50):
 		if(coll<0 and samples>50):
 			a = open('final'+mdp.filename+'-ddv.txt', 'a+')
@@ -100,18 +123,62 @@ def ddvouu(mdp, start_state=0, epsilon=4, delta=0.1):
 			print np.argmax(Qupper, axis=1)
 			print np.argmax(QlowerMBAE, axis=1)
 			print np.argmax(Qstar, axis=1)
-			# return policy_lower
+			return policy_lower
 
 		## Caclulate deldelV for all states
-		for st in list(discovered_states):
-			for ac in range(mdp.numActions):
-				#### Compute del del V
-				deltadeltaV[st][ac] = CalculateDelDelV(st,ac,mdp,N_s_a_sprime, Qupper, Qlower, Vupper, Vlower, start_state, P_s_a_sprime, P_tilda, P_lower_tilda, R_s_a, epsilon, delta, converge_iterations, epsilon_convergence)
+		if(use_mbae):
+			for st in list(discovered_states):
+				for ac in range(mdp.numActions):
+					#### Compute del del V
+					deltadeltaV[st][ac] = CalculateDelDelV(
+						st,
+						ac,
+						mdp,
+						N_s_a_sprime,
+						QupperMBAE,
+						QlowerMBAE,
+						VupperMBAE,
+						VlowerMBAE,
+						start_state,
+						P_s_a_sprime,
+						P_tilda,
+						P_lower_tilda,
+						R_s_a,
+						epsilon,
+						delta,
+						converge_iterations,
+						epsilon_convergence
+						)
+		else:
+			for st in list(discovered_states):
+				for ac in range(mdp.numActions):
+					#### Compute del del V
+					deltadeltaV[st][ac] = CalculateDelDelV(
+						st,
+						ac,
+						mdp,
+						N_s_a_sprime,
+						Qupper,
+						Qlower,
+						Vupper,
+						Vlower,
+						start_state,
+						P_s_a_sprime,
+						P_tilda,
+						P_lower_tilda,
+						R_s_a,
+						epsilon,
+						delta,
+						converge_iterations,
+						epsilon_convergence
+						)
 
 		#### Simulate greedily wrt deldelV
-		curent_state, current_action = np.unravel_index(deltadeltaV.argmax(), deltadeltaV.shape)
+		# print np.unravel_index(deltadeltaV.argmax(), deltadeltaV.shape)
+		current_state, current_action = np.unravel_index(deltadeltaV.argmax(), deltadeltaV.shape)
+		# print "Sampling ", current_state, current_action
 		ss,rr = mdp.simulate(current_state, current_action)
-		
+		samples += 1
 		#### Add received state to the set of discovered states
 		discovered_states.add(ss)
 		
@@ -119,22 +186,32 @@ def ddvouu(mdp, start_state=0, epsilon=4, delta=0.1):
 		R_s_a[current_state][current_action] = (rr + R_s_a[current_state][current_action]*N_s_a[current_state][current_action])/(N_s_a[current_state][current_action]+1)
 		N_s_a[current_state][current_action] += 1	
 		N_s_a_sprime[current_state][current_action][ss] += 1
-		samples += 1
+		
 		for s2 in range(mdp.numStates):
 			# print current_state, current_action, s2, N_s_a_sprime[current_state][current_action][s2], N_s_a[current_state][current_action]
 			P_s_a_sprime[current_state][current_action][s2] = (float)(N_s_a_sprime[current_state][current_action][s2])/N_s_a[current_state][current_action]
+		
 		if(samples%100==0):
+			if(use_mbae):
 				acList = bestTwoActions(mdp, start_state, QlowerMBAE, QupperMBAE, Qstar)
-				if(verbose==0):
-					outp.write(str(samples))
-					outp.write('\t')
-					outp.write(str(QupperMBAE[start_state][acList[1]]-QlowerMBAE[start_state][acList[0]]))#-epsilon*(1-mdp.discountFactor)/2 
-					outp.write('\n')
+			else:
+				acList = bestTwoActions(mdp, start_state, Qlower, Qupper, Qstar)
+			if(verbose==0):
+				outp.write(str(samples))
+				outp.write('\t')
+				if(use_mbae):
+					outp.write(str(QupperMBAE[start_state][acList[1]]-QlowerMBAE[start_state][acList[0]]))
+				else:
+					outp.write(str(Qupper[start_state][acList[1]]-Qlower[start_state][acList[0]]))
+				outp.write('\n')
+				if(use_mbae):
 					print samples, (QupperMBAE[start_state][acList[1]]-QlowerMBAE[start_state][acList[0]])
 				else:
-					print samples, (QupperMBAE[start_state][acList[1]]-QlowerMBAE[start_state][acList[0]])
-				np.savetxt(ff, N_s_a, delimiter=',')
-				ff.write('\n')
+					print samples, (Qupper[start_state][acList[1]]-Qlower[start_state][acList[0]])
+			else:
+				print samples, (QupperMBAE[start_state][acList[1]]-QlowerMBAE[start_state][acList[0]])
+			np.savetxt(ff, N_s_a, delimiter=',')
+			ff.write('\n')
 
 		### Calculating MBAE bounds
 		for internal in range(converge_iterations):
@@ -163,9 +240,9 @@ def ddvouu(mdp, start_state=0, epsilon=4, delta=0.1):
 				# print "Stopping with ", internal, "iterations"
 				break
 
-		if(samples==initial_iterations+2):
-			Qupper = np.copy(QupperMBAE)
-			Qlower = np.copy(QlowerMBAE)
+		# if(samples==initial_iterations+2):
+		# 	Qupper = np.copy(QupperMBAE)
+		# 	Qlower = np.copy(QlowerMBAE)
 
 
 	return best_policy

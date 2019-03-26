@@ -4,13 +4,16 @@ import numpy as np
 import time
 from util import getPolicies, UpperP, LowerP, indexOfPolicy
 from util import itConvergencePolicy, getRewards, getProb, allOneNeighbours
+from util import CalculateDelDelV
 
 verbose = 0
-## policyMethod = 0 for brute force method, = 1 for nearest neighbour approach
-policyMethod = 1
+## policyMethod = 0 : brute force method, = 1 : nearest neighbour approach
+policyMethod = 0
 
-def policyIt(mdp, start_state=0, epsilon=4, delta=0.1):
+def policyIt(mdp, start_state=0, epsilon=4, randomseed=None, delta=0.1, bounds="MBAE", use_ddv=True):
 
+	if(randomseed is not None):
+		np.random.seed(randomseed)
 	policies = np.array(getPolicies(mdp.numStates, mdp.numActions))
 	numPolicies = len(policies)
 	counts = np.zeros((numPolicies))
@@ -19,6 +22,8 @@ def policyIt(mdp, start_state=0, epsilon=4, delta=0.1):
 	
 	print "Chosen value of H is : ", H
 
+	
+	## Initializations
 	it = 0
 	samples = 0
 	initial_iterations = 1*mdp.numStates*mdp.numActions
@@ -37,22 +42,23 @@ def policyIt(mdp, start_state=0, epsilon=4, delta=0.1):
 	VlowerMBAE = np.zeros((numPolicies, mdp.numStates))
 	VupperMBAE = mdp.Vmax*np.ones((numPolicies, mdp.numStates))
 	Vstar = (mdp.Vmax/2)*np.ones((numPolicies, mdp.numStates))
+	deltadeltaV = np.zeros((mdp.numStates))
 
 	while it < initial_iterations:
 		for state in range(mdp.numStates):
 			for act in range(mdp.numActions):
-				it+=1
+				it = it + 1
 				ss, rr = mdp.simulate(state, act)
 				R_s_a[state][act] = (rr + R_s_a[state][act]*N_s_a[state][act])/(N_s_a[state][act]+1)
-				N_s_a[state][act] += 1
-				N_s_a_sprime[state][act][ss] += 1
+				N_s_a[state][act] = N_s_a[state][act] + 1
+				N_s_a_sprime[state][act][ss] = N_s_a_sprime[state][act][ss] + 1
 				# P_s_a_sprime = np.copy(N_s_a_sprime)
 				for s2 in range(mdp.numStates):
 					P_s_a_sprime[state][act][s2] = (float)(N_s_a_sprime[state][act][s2])/N_s_a[state][act]
 	samples += initial_iterations
 
-	ff = open(mdp.filename+'-policy.txt', 'w+')
-	while True:
+	ff = open(mdp.filename+'-policy' + str(randomseed) +'.txt', 'wb')
+	while samples<MAX_ITERATION_LIMIT:
 		
 		# print counts
 		if(policyMethod==0):
@@ -63,14 +69,54 @@ def policyIt(mdp, start_state=0, epsilon=4, delta=0.1):
 				for i in range(mdp.numStates):
 					# print "For state ", i, " doing UpperP"
 					if(N_s_a[i][current_policy[i]]>0):
-						P_tilda[p][i] = UpperP(i,current_policy[i],delta,N_s_a_sprime[i][current_policy[i]],mdp.numStates,Qupper[p],False)
-						P_lower_tilda[p][i] = LowerP(i,current_policy[i],delta,N_s_a_sprime[i][current_policy[i]],mdp.numStates,Qlower[p],False)
-					# import pdb; pdb.set_trace()
+						P_tilda[p][i] = UpperP(
+							i,
+							current_policy[i],
+							delta,
+							N_s_a_sprime[i][current_policy[i]],
+							mdp.numStates,
+							Qupper[p],
+							False
+							)
+						P_lower_tilda[p][i] = LowerP(
+							i,
+							current_policy[i],
+							delta,
+							N_s_a_sprime[i][current_policy[i]],
+							mdp.numStates,
+							Qlower[p],
+							False
+							)
 
-				Qupper[p] = itConvergencePolicy(Qupper[p],getRewards(R_s_a, current_policy),P_tilda[p],mdp.discountFactor, epsilon, converge_iterations, epsilon_convergence)
-				Qlower[p] = itConvergencePolicy(Qlower[p],getRewards(R_s_a, current_policy),P_lower_tilda[p],mdp.discountFactor, epsilon, converge_iterations, epsilon_convergence)	
-				Qstar[p] = itConvergencePolicy(Qstar[p],getRewards(R_s_a, current_policy),getProb(P_s_a_sprime, current_policy),mdp.discountFactor, epsilon, converge_iterations, epsilon_convergence)	
+				# Qupper[p] = itConvergencePolicy(
+				# 	Qupper[p],
+				# 	getRewards(R_s_a, current_policy),
+				# 	P_tilda[p],
+				# 	mdp.discountFactor,
+				# 	epsilon,
+				# 	converge_iterations,
+				# 	epsilon_convergence
+				# 	)
+				# Qlower[p] = itConvergencePolicy(
+				# 	Qlower[p],
+				# 	getRewards(R_s_a, current_policy),
+				# 	P_lower_tilda[p],
+				# 	mdp.discountFactor,
+				# 	epsilon,
+				# 	converge_iterations,
+				# 	epsilon_convergence
+				# 	)	
+				# Qstar[p] = itConvergencePolicy(
+				# 	Qstar[p],
+				# 	getRewards(R_s_a, current_policy),
+				# 	getProb(P_s_a_sprime, current_policy),
+				# 	mdp.discountFactor,
+				# 	epsilon,
+				# 	converge_iterations,
+				# 	epsilon_convergence
+				# 	)	
 
+				# import pdb; pdb.set_trace()
 				# print "mbie bounds calculated!"
 				for internal in range(converge_iterations):
 					
@@ -80,6 +126,7 @@ def policyIt(mdp, start_state=0, epsilon=4, delta=0.1):
 						act = current_policy[state]
 							# Calculations for QupperMBAE and QlowerMBAE
 						firstterm = R_s_a[state][act]
+						# print VupperMBAE[p]
 						secondterm = mdp.discountFactor*np.sum(VupperMBAE[p]*(P_s_a_sprime[state][act]))
 						lower_secondterm = mdp.discountFactor*np.sum(VlowerMBAE[p]*(P_s_a_sprime[state][act]))
 						star_secondterm = mdp.discountFactor*np.sum(Vstar[p]*(P_s_a_sprime[state][act]))
@@ -92,6 +139,7 @@ def policyIt(mdp, start_state=0, epsilon=4, delta=0.1):
 						Vstar[p][state] = QstarMBAE[p][state]
 					if(np.linalg.norm(oldQlowerMBAE-QlowerMBAE[p][start_state])<=epsilon_convergence):
 						break
+				# print VupperMBAE[p]
 
 		
 			# import pdb; pdb.set_trace()
@@ -102,6 +150,7 @@ def policyIt(mdp, start_state=0, epsilon=4, delta=0.1):
 			else:
 				policy2Index = policy2choices[0]
 
+			# print "polivyiniex", QstarMBAE[:,start_state]
 		elif(policyMethod==1):
 			# print "Choosing 2nd method for finding policy"
 			p = np.random.randint(0,numPolicies)
@@ -273,19 +322,17 @@ def policyIt(mdp, start_state=0, epsilon=4, delta=0.1):
 		h=0
 		policy1 = policies[policy1Index]
 		policy2 = policies[policy2Index]
+		# print policy2
+		# print QstarMBAE[:,start_state]
 		state = start_state
 		if (samples%1000)<100:
 			if(verbose==0):
-				# ff.write('Showing Qupper, Qstar \n')
-				# np.savetxt(ff, (QupperMBAE[:,start_state],Qstar[:,start_state]), fmt="%f")
-				# np.savetxt(ff, QupperMBAE[:,start_state], delimiter=',')
-				# np.savetxt(ff, Qstar[:,start_state], delimiter=',')
 				# print QupperMBAE[:,start_state]
 				# print Qstar[:,start_state]
 				ff.write(str(samples))
 				ff.write('\t')
 				ff.write(str(QupperMBAE[policy2Index][start_state]-QlowerMBAE[policy1Index][start_state]))#-epsilon*(1-mdp.discountFactor)/2 
-				# print QupperMBAE[0][0]
+				print samples, QupperMBAE[policy2Index][start_state]-QlowerMBAE[policy1Index][start_state]
 				ff.write('\n')
 			else:
 				print samples
@@ -293,37 +340,88 @@ def policyIt(mdp, start_state=0, epsilon=4, delta=0.1):
 			# np.savetxt(ff, (policies[policy1Index]), fmt="%d")
 		counts[policy1Index] += 1
 		counts[policy2Index] += 1
-		while h<H:
-			act = policy1[state]
-			# print "------>",current_state, current_action
-			ss, rr = mdp.simulate(state, act)
-			samples+=1
-			R_s_a[state][act] = (rr + R_s_a[state][act]*N_s_a[state][act])/(N_s_a[state][act]+1)
-			N_s_a[state][act] += 1
-			N_s_a_sprime[state][act][ss] += 1
-			# P_s_a_sprime = np.copy(N_s_a_sprime)
-			for s2 in range(mdp.numStates):
-				P_s_a_sprime[state][act][s2] = (float)(N_s_a_sprime[state][act][s2])/N_s_a[state][act]
-			state = ss
-			h+=1
 
-		h=0
+		polList = [policy1Index, policy2Index]
 
-		state = start_state
-		# print "episode : "
-		while h<H:
-			# print state, 
-			act = policy2[state]
-			ss, rr = mdp.simulate(state, act)
-			samples+=1
-			R_s_a[state][act] = (rr + R_s_a[state][act]*N_s_a[state][act])/(N_s_a[state][act]+1)
-			N_s_a[state][act] += 1
-			N_s_a_sprime[state][act][ss] += 1
-			# P_s_a_sprime = np.copy(N_s_a_sprime)
-			for s2 in range(mdp.numStates):
-				P_s_a_sprime[state][act][s2] = (float)(N_s_a_sprime[state][act][s2])/N_s_a[state][act]
-			state = ss
-			h+=1
+
+		if(use_ddv):
+			## Caclulate deldelV for all states
+			for pnum in polList:
+				policiesfddv = policies[pnum]
+				# print "Getting DDV values"
+				for st in range(mdp.numStates):
+					ac = policiesfddv[st]
+					#### Compute del del V
+					deltadeltaV[st] = CalculateDelDelV(
+						st,
+						ac,
+						mdp,
+						N_s_a_sprime,
+						QupperMBAE[pnum],
+						QlowerMBAE[pnum],
+						None,
+						None,
+						start_state,
+						P_s_a_sprime,
+						P_tilda[pnum],
+						P_lower_tilda[pnum],
+						R_s_a,
+						epsilon,
+						delta,
+						converge_iterations,
+						epsilon_convergence,
+						policiesfddv
+						)
+
+				# print deltadeltaV
+				cs = np.argmax(deltadeltaV)
+				ca = policiesfddv[cs]
+				# print deltadeltaV, cs, ca
+				# print deltadeltaV, policy1, policy2
+				# print "Found max state for DDV: ",cs,ca
+				# time.sleep(0.1)
+				ss, rr = mdp.simulate(cs, ca)
+				samples = samples +  1
+				R_s_a[cs][ca] = (rr + R_s_a[cs][ca]*N_s_a[cs][ca])/(N_s_a[cs][ca]+1)
+				N_s_a[cs][ca] += 1
+				N_s_a_sprime[cs][ca][ss] += 1
+				# P_s_a_sprime = np.copy(N_s_a_sprime)
+				for s2 in range(mdp.numStates):
+					P_s_a_sprime[cs][ca][s2] = (float)(N_s_a_sprime[cs][ca][s2])/N_s_a[cs][ca]
+
+		## Dont use ddv, simulate full episode
+		else:
+			while h<H:
+				act = policy1[state]
+				# print "------>",current_state, current_action
+				ss, rr = mdp.simulate(state, act)
+				samples+=1
+				R_s_a[state][act] = (rr + R_s_a[state][act]*N_s_a[state][act])/(N_s_a[state][act]+1)
+				N_s_a[state][act] += 1
+				N_s_a_sprime[state][act][ss] += 1
+				# P_s_a_sprime = np.copy(N_s_a_sprime)
+				for s2 in range(mdp.numStates):
+					P_s_a_sprime[state][act][s2] = (float)(N_s_a_sprime[state][act][s2])/N_s_a[state][act]
+				state = ss
+				h+=1
+
+			h=0
+
+			state = start_state
+			# print "episode : "
+			while h<H:
+				# print state, 
+				act = policy2[state]
+				ss, rr = mdp.simulate(state, act)
+				samples+=1
+				R_s_a[state][act] = (rr + R_s_a[state][act]*N_s_a[state][act])/(N_s_a[state][act]+1)
+				N_s_a[state][act] += 1
+				N_s_a_sprime[state][act][ss] += 1
+				# P_s_a_sprime = np.copy(N_s_a_sprime)
+				for s2 in range(mdp.numStates):
+					P_s_a_sprime[state][act][s2] = (float)(N_s_a_sprime[state][act][s2])/N_s_a[state][act]
+				state = ss
+				h+=1
 
 		if (samples%1000)<100:
 			if(QupperMBAE[policy2Index][start_state]-QlowerMBAE[policy1Index][start_state]-epsilon*(1-mdp.discountFactor)/2<0):
@@ -337,4 +435,5 @@ def policyIt(mdp, start_state=0, epsilon=4, delta=0.1):
 			# print "ends here"
 
 	ff.close()
+	return policy1
 

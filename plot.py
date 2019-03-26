@@ -19,7 +19,7 @@ for i in range(int(sys.argv[1])):
 
 	data1=np.array(data1)
 	plt.plot(data1[:,1], data1[:,0]/1e5, label=sys.argv[i+2])
-	plt.xlim(0, 10)
+	plt.xlim(0, 20)
 
 # plt.yaxis.tick_right()
 # print data[:,0]

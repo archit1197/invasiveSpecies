@@ -6,8 +6,10 @@ from util import bestTwoActions, UpperP, LowerP, iteratedConvergence
 
 verbose=0
 
-def RoundRobin(mdp, start_state=0, epsilon=4, delta=0.1):
+def RoundRobin(mdp, start_state=0, epsilon=4, randomseed=None, delta=0.1):
 	global MAX_ITERATION_LIMIT, c
+	if(randomseed is not None):
+		np.random.seed(randomseed)
 	iteration = 0
 	it=0
 	initial_iterations = 1*mdp.numStates*mdp.numActions
@@ -67,7 +69,7 @@ def RoundRobin(mdp, start_state=0, epsilon=4, delta=0.1):
 	Qlower = np.copy(QlowerMBAE)
 
 	if(verbose==0):
-		outp = open(mdp.filename+'-rr.txt', 'wb')
+		outp = open(mdp.filename+'-rr' + str(randomseed) +'.txt', 'wb')
 	ff = open(mdp.filename+'-rr-samples.txt', 'w+')
 
 	while iteration<MAX_ITERATION_LIMIT:

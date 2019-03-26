@@ -7,7 +7,9 @@ from util import bestTwoActions, UpperP, LowerP, iteratedConvergence
 
 verbose=0
 
-def LUCBEpisodic(mdp, start_state=0, epsilon=4, delta=0.1, fileprint=1):
+def LUCBEpisodic(mdp, start_state=0, epsilon=4, randomseed=None, delta=0.1, fileprint=1):
+	if(randomseed is not None):
+		np.random.seed(randomseed)
 	global MAX_ITERATION_LIMIT, c
 	iteration = 0
 	it=0
@@ -81,7 +83,7 @@ def LUCBEpisodic(mdp, start_state=0, epsilon=4, delta=0.1, fileprint=1):
 	Qlower = np.copy(QlowerMBAE)
 
 	if(verbose==0):
-		outp = open(mdp.filename+'-lucbeps.txt', 'wb')
+		outp = open(mdp.filename+'-lucbeps' + str(randomseed) +'.txt', 'wb')
 	ff = open(mdp.filename+'-lucbeps-samples.txt', 'w+')
 
 	h=0
@@ -194,10 +196,10 @@ def LUCBEpisodic(mdp, start_state=0, epsilon=4, delta=0.1, fileprint=1):
 			print "Setting final_policy of ", start_state, " to", acList[0] 
 			final_policy[start_state] = acList[0]
 			print "Iterations taken : ", iteration
-			print "Returning the policy :", final_policy
 			for i in range(mdp.numStates):
 				if(final_policy[i]==-1):
 					final_policy[i] = bestTwoActions(mdp,i,QlowerMBAE,QupperMBAE, Qstar)[0]
+			print "Returning policy : ", final_policy
 
 			if(iteration!=51):
 				a = open('final'+mdp.filename+'-lucbeps.txt', 'a+')
